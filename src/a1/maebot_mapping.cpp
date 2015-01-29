@@ -2,9 +2,10 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <lcm/lcm.h>
+#include <lcm/lcm-cpp.hpp>
 #include <signal.h>
 #include <math.h>
+#include <string>
 
 #include "vx/vx.h"
 #include "vx/vxo_drawables.h"
@@ -18,11 +19,14 @@
 #include "imagesource/image_source.h"
 #include "imagesource/image_convert.h"
 
-#include "lcmtypes/maebot_motor_command_t.h"
-#include "lcmtypes/maebot_targeting_laser_command_t.h"
-#include "lcmtypes/maebot_leds_command_t.h"
-#include "lcmtypes/maebot_sensor_data_t.h"
-#include "lcmtypes/maebot_motor_feedback_t.h"
+#include "maebot_handlers.hpp"
+#include "lcmtypes/maebot_motor_command_t.hpp"
+#include "lcmtypes/maebot_targeting_laser_command_t.hpp"
+#include "lcmtypes/maebot_leds_command_t.hpp"
+#include "lcmtypes/maebot_sensor_data_t.hpp"
+#include "lcmtypes/maebot_motor_feedback_t.hpp"
+#include "lcmtypes/maebot_pose_t.hpp"
+#include "lcmtypes/maebot_laser_scan_t.hpp"
 
 #define MAX_REVERSE_SPEED -1.0f
 #define MAX_FORWARD_SPEED 1.0f
@@ -53,7 +57,7 @@ struct state
     image_source_t *isrc;
     int fidx;
 
-    lcm_t *lcm;
+    //lcm::LCM *lcm;
     pthread_mutex_t lcm_mutex;
 
     pthread_mutex_t layer_mutex;
@@ -66,7 +70,7 @@ static int verbose = 0;
 
 static void display_finished(vx_application_t *app, vx_display_t *disp)
 {
-    state_t *state = app->impl;
+    state_t *state = (state_t *) app->impl;
     pthread_mutex_lock(&state->layer_mutex);
 
     vx_layer_t *layer = NULL;
@@ -79,7 +83,7 @@ static void display_finished(vx_application_t *app, vx_display_t *disp)
 
 static void display_started(vx_application_t *app, vx_display_t *disp)
 {
-    state_t *state = app->impl;
+    state_t *state = (state_t *) app->impl;
 
     vx_layer_t *layer = vx_layer_create(state->vw);
     vx_layer_set_display(layer, disp);
@@ -96,7 +100,7 @@ static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 }
 static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_mouse_event_t * mouse)
 {
-    state_t *state = vh->impl;
+    state_t *state = (state_t *) vh->impl;
 
     // Button state
     int m1 = mouse->button_mask & VX_BUTTON1_MASK;
@@ -152,7 +156,7 @@ static void handler(int signum)
 // This thread continuously publishes command messages to the maebot
 static void* send_cmds(void *data)
 {
-    state_t *state = data;
+    state_t *state = (state_t *) data;
     uint32_t Hz = 20;
 
     while (state->running) {
@@ -217,7 +221,7 @@ static void* send_cmds(void *data)
         matd_destroy(click);
 
         // Publish
-        maebot_motor_command_t_publish(state->lcm, "MAEBOT_MOTOR_COMMAND", &(state->cmd));
+        //state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
 
         pthread_mutex_unlock(&state->cmd_mutex);
 
@@ -230,7 +234,7 @@ static void* send_cmds(void *data)
 // This thread continously renders updates from the robot
 static void* render_loop(void *data)
 {
-    state_t *state = data;
+    state_t *state = (state_t *) data;
 
     int fps = 30;
 
@@ -286,28 +290,12 @@ static void* render_loop(void *data)
     return NULL;
 }
 
-// === LCM Handlers =================
-static void motor_feedback_handler(const lcm_recv_buf_t *rbuf,
-                                   const char* channel,
-                                   const maebot_motor_feedback_t* msg,
-                                   void* user)
-{
-}
-
-static void sensor_data_handler(const lcm_recv_buf_t *rbuf,
-                                const char* channel,
-                                const maebot_sensor_data_t* msg,
-                                void* user)
-{
-}
-
-
 int main(int argc, char **argv)
 {
     vx_global_init();
 
     // === State initialization ============================
-    state_t *state = calloc(1, sizeof(state_t));
+    state_t *state = (state_t *) calloc(1, sizeof(state_t));
     global_state = state;
     state->gopt = getopt_create();
     state->app.display_finished = display_finished;
@@ -325,7 +313,6 @@ int main(int argc, char **argv)
     state->joy_bounds = 10.0;
 
     state->running = 1;
-    state->lcm = lcm_create(NULL);
     state->vw = vx_world_create();
     pthread_mutex_init(&state->layer_mutex, NULL);
     pthread_mutex_init(&state->cmd_mutex, NULL);
@@ -356,7 +343,7 @@ int main(int argc, char **argv)
     vx_remote_display_source_attr_t remote_attr;
     vx_remote_display_source_attr_init(&remote_attr);
     remote_attr.max_bandwidth_KBs = getopt_get_int(state->gopt, "limitKBs");
-    remote_attr.advertise_name = "Maebot Teleop";
+    remote_attr.advertise_name = (char *)"Maebot Teleop";
     remote_attr.connection_port = getopt_get_int(state->gopt, "port");
 
     vx_remote_display_source_t *remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
@@ -364,14 +351,15 @@ int main(int argc, char **argv)
     // Video stuff?
 
     // LCM subscriptions
-    maebot_motor_feedback_t_subscribe(state->lcm,
-                                        "MAEBOT_MOTOR_FEEDBACK",
-                                        motor_feedback_handler,
-                                        state);
-    maebot_sensor_data_t_subscribe(state->lcm,
-                                   "MAEBOT_SENSOR_DATA",
-                                   sensor_data_handler,
-                                   state);
+    lcm::LCM lcm;
+    MaebotPoseHandler pose_handler;
+    MaebotLaserScanHandler laser_scan_handler;
+    lcm.subscribe("MAEBOT_POSE",
+                          &MaebotPoseHandler::handleMessage,
+                          &pose_handler);
+    lcm.subscribe("MAEBOT_LASER_SCAN",
+                          &MaebotLaserScanHandler::handleMessage,
+                          &laser_scan_handler);
 
 
     // Spin up thread(s)
@@ -379,7 +367,6 @@ int main(int argc, char **argv)
     pthread_create(&state->render_thread, NULL, render_loop, state);
 
     // Loop forever
-    while (1) lcm_handle(state->lcm);
-
+    while(lcm.handle() == 0);
     vx_remote_display_source_destroy(remote);
 }
