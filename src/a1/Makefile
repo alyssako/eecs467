@@ -2,12 +2,20 @@ include ../common.mk
 
 # flags for building the gtk library
 CXXFLAGS = $(CXXFLAGS_STD) \
-	 $(CXXFLAGS_VX_GTK) \
-         $(CXXFLAGS_IMAGESOURCE) \
-	 $(CXXFLAGS_MATH) \
-	 $(CXXFLAGS_COMMON) \
-	 $(CXXFLAGS_LCMTYPES) \
-	 -O2
+	$(CFLAGS_VX_GTK) \
+	$(CFLAGS_IMAGESOURCE) \
+	$(CFLAGS_MATH) \
+	$(CFLAGS_COMMON) \
+	$(CFLAGS_LCMTYPES) \
+	-O2
+
+CFLAGS = $(CFLAGS_STD) \
+	$(CFLAGS_VX_GTK) \
+	$(CFLAGS_IMAGESOURCE) \
+	$(CFLAGS_MATH) \
+	$(CFLAGS_COMMON) \
+	$(CFLAGS_LCMTYPES) \
+	-O2
 
 LDFLAGS = $(LDFLAGS_STD) \
 	  $(LDFLAGS_VX_GTK) \
@@ -23,11 +31,12 @@ LIBEECS467_OBJS = eecs467_util.o
 
 BIN_EECS467_GUI_EXAMPLE = $(BIN_PATH)/eecs467_gui_example
 BIN_EECS467_MAEBOT_MAPPING = $(BIN_PATH)/eecs467_maebot_mapping
-#BIN_EECS467_MAEBOT_VIDEO_TELOP = $(BIN_PATH)/eecs467_maebot_video_telop
+BIN_EECS467_MAEBOT_VIDEO_TELOP = $(BIN_PATH)/eecs467_maebot_video_telop
 #BIN_HANDLER_TEST = $(BIN_PATH)/handler_test
 
 ALL = $(LIB_EECS467) $(BIN_EECS467_GUI_EXAMPLE) \
-      $(BIN_EECS467_MAEBOT_MAPPING)#(BIN_HANDLER_TEST)
+      $(BIN_EECS467_MAEBOT_MAPPING) \
+      $(BIN_EECS467_MAEBOT_VIDEO_TELOP)
 
 all: $(ALL)
 
@@ -47,9 +56,9 @@ $(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
-#$(BIN_EECS467_MAEBOT_VIDEO_TELOP): maebot_video_teleop.o $(LIBDEPS)
-#	@echo "\t$@"
-#	@$(CC) -o $@ $^ $(LDFLAGS)
+$(BIN_EECS467_MAEBOT_VIDEO_TELOP): maebot_video_teleop.o $(LIBDEPS)
+	@echo "\t$@"
+	@$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	@rm -f *.o *~ *.a
