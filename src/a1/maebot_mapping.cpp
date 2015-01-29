@@ -28,6 +28,9 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
+#include "mapping/occupancy_grid.hpp"
+#include "mapping/occupancy_grid_utils.hpp"
+
 #define MAX_REVERSE_SPEED -1.0f
 #define MAX_FORWARD_SPEED 1.0f
 
