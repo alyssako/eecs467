@@ -29,8 +29,8 @@ class ApproxLaser
         FullLaserScanApprox findPts(LaserScan);
 
         /* add pose to deque (and delete oldest pose */
-        bool addPose(maebot_pose_t);
+        bool addPose(maebot_pose_t newPose);
 
         /* check and see if the poses came through in the correct order */
-        bool checkOrder(maebot_pose_t);
+        bool checkOrder(maebot_pose_t newPose);
 };
