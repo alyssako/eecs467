@@ -14,6 +14,8 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
+#include "OccupancyGridMapper.hpp"
+
 class MaebotPoseHandler
 {
     public:
@@ -21,7 +23,8 @@ class MaebotPoseHandler
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
-                           const maebot_pose_t *msg)
+                           const maebot_pose_t *msg,
+                           OccupancGrid occupancy_grid)
         {
         }
 };
@@ -33,7 +36,8 @@ class MaebotLaserScanHandler
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
-                           const maebot_laser_scan_t *msg)
+                           const maebot_laser_scan_t *msg,
+                           OccupancGrid occupancy_grid)
         {
         }
 };

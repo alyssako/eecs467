@@ -358,11 +358,11 @@ int main(int argc, char **argv)
     MaebotPoseHandler pose_handler;
     MaebotLaserScanHandler laser_scan_handler;
     lcm.subscribe("MAEBOT_POSE",
-                          &MaebotPoseHandler::handleMessage,
-                          &pose_handler);
+                  &MaebotPoseHandler::handleMessage,
+                  &pose_handler);
     lcm.subscribe("MAEBOT_LASER_SCAN",
-                          &MaebotLaserScanHandler::handleMessage,
-                          &laser_scan_handler);
+                  &MaebotLaserScanHandler::handleMessage,
+                  &laser_scan_handler);
 
 
     // Spin up thread(s)
