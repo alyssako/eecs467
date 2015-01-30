@@ -1,3 +1,6 @@
+#ifndef OCCUPANCY_GRID_MAPPER_HPP
+#define OCCUPANCY_GRID_MAPPER_HPP
+
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -15,6 +18,7 @@
 #include "lcmtypes/maebot_motor_feedback_t.hpp"
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
+#include "lcmtypes/maebot_occupancy_grid_t.hpp"
 
 #include "ApproxLaser.hpp"
 #include "occupancy_grid.hpp"
@@ -23,18 +27,22 @@
 class OccupancyGridMapper
 {
     private:
-        std::queue<maebot_laser_scan_t> laser_scans;
-        pthread_mutex_t laser_scans_mutex;
-        std::queue<maebot_pose_t> poses;
-        pthread_mutex_t poses mutex;
+        std::queue<maebot_laser_scan_t> laser_scans_;
+        pthread_mutex_t laser_scans_mutex_;
+        std::queue<maebot_pose_t> poses_;
+        pthread_mutex_t poses_mutex_;
         
-        LaserScanApprox approx;
-        MovingLaser moving_laser;
-        OccupancyGrid occupancy_grid;
+        LaserScanApprox approx_;
+        MovingLaser moving_laser_;
+        OccupancyGrid occupancy_grid_;
     public:
+        OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid);
+        ~OccupancyGridMapper();
         void calculateLaserOrigins();
         void updateGrid();
         
         void addLaserScan(maebot_laser_scan_t input_scan);
         void addPose(maebot_pose_t input_pose);
 };
+
+#endif
