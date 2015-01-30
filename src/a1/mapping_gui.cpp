@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <math.h>
+#include <vector>
 
 // core api
 #include "vx/vx.h"
@@ -26,6 +27,11 @@
 #include "imagesource/image_convert.h"
 
 #include "eecs467_util.h"    // This is where a lot of the internals live
+
+#define SCREEN_WIDTH 100
+#define SCREEN_HEIGHT 100
+
+using namespace std;
 
 // It's good form for every application to keep its state in a struct.
 typedef struct state state_t;
@@ -75,7 +81,7 @@ my_param_changed (parameter_listener_t *pl, parameter_gui_t *pg, const char *nam
 static int
 mouse_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_mouse_event_t *mouse)
 {
-    state_t *state = vxeh->impl;
+    state_t *state = (state_t*)vxeh->impl;
 
     // vx_camera_pos_t contains camera location, field of view, etc
     // vx_mouse_event_t contains scroll, x/y, and button click events
@@ -112,6 +118,13 @@ touch_event (vx_event_handler_t *vh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_to
     return 0; // Does nothing
 }
 
+//Converts logodds [-128, 127] to a grayscale vaue [0, 255]
+static int to_grayscale(int a)
+{
+	return a + 128;
+}
+
+
 // === Your code goes here ================================================
 // The render loop handles your visualization updates. It is the function run
 // by the animate_thread. It periodically renders the contents on the
@@ -120,110 +133,45 @@ void *
 animate_thread (void *data)
 {
     const int fps = 60;
-    state_t *state = data;
+    state_t *state = (state_t*)data;
 
-    // Set up the imagesource
-    image_source_t *isrc = image_source_open (state->img_url);
-
-    if (isrc == NULL)
-        printf ("Error opening device.\n");
-    else {
-        // Print out possible formats. If no format was specified in the
-        // url, then format 0 is picked by default.
-        // e.g. of setting the format parameter to format 2:
-        //
-        // --url=dc1394://bd91098db0as9?fidx=2
-        for (int i = 0; i < isrc->num_formats (isrc); i++) {
-            image_source_format_t ifmt;
-            isrc->get_format (isrc, i, &ifmt);
-            printf ("%3d: %4d x %4d (%s)\n",
-                    i, ifmt.width, ifmt.height, ifmt.format);
-        }
-        isrc->start (isrc);
+    vector<vector<int> > grid;
+    for(int i = 0; i < 10; i++)
+    {
+	vector<int> g;
+	for(int j = 0; j < 10; j++)
+	{
+		g.push_back(rand() % 255 - 128);
+	}
+	grid.push_back(g);
     }
 
     // Continue running until we are signaled otherwise. This happens
     // when the window is closed/Ctrl+C is received.
     while (state->running) {
 
-        // Get the most recent camera frame and render it to screen.
-        if (isrc != NULL) {
-            image_source_data_t *frmd = calloc (1, sizeof(*frmd));
-            int res = isrc->get_frame (isrc, frmd);
-            if (res < 0)
-                printf ("get_frame fail: %d\n", res);
-            else {
-                // Handle frame
-                image_u32_t *im = image_convert_u32 (frmd);
-                if (im != NULL) {
-                    vx_object_t *vim = vxo_image_from_u32(im,
-                                                          VXO_IMAGE_FLIPY,
-                                                          VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
-
-                    // render the image centered at the origin and at a normalized scale of +/-1 unit in x-dir
-                    const double scale = 2./im->width;
-                    vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "image"),
+	image_u32_t *im = image_u32_create(10, 10);
+	for(int y = 0; y < im->height; y++)
+	{
+		for(int x = 0; x < im->width; x++)
+		{
+			int a = 255; //alpha transparency value.
+			int v = to_grayscale(grid[x][y]) % 255;
+			im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
+		}
+	}
+	vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
+	const double scale = 1./im->width;
+                    vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
                                         vxo_chain (vxo_mat_scale3 (scale, scale, 1.0),
                                                    vxo_mat_translate3 (-im->width/2., -im->height/2., 0.),
-                                                   vim));
-                    vx_buffer_swap (vx_world_get_buffer (state->vxworld, "image"));
-                    image_u32_destroy (im);
-                }
-            }
-            fflush (stdout);
-            isrc->release_frame (isrc, frmd);
-        }
-
-        // Example rendering of vx primitives
-        double rad = (vx_util_mtime () % 5000) * 2. * M_PI / 5e3;   // [ 0, 2PI]
-        double osc = ((vx_util_mtime () % 5000) / 5e3) * 2. - 1;    // [-1, 1]
-
-        // Creates a blue box and applies a series of rigid body transformations
-        // to it. A vxo_chain applies its arguments sequentially. In this case,
-        // then, we rotate our coordinate frame by rad radians, as determined
-        // by the current time above. Then, the origin of our coordinate frame
-        // is translated 0 meters along its X-axis and 0.5 meters along its
-        // Y-axis. Finally, a 0.1 x 0.1 x 0.1 cube (or box) is rendered centered at the
-        // origin, and is rendered with the blue mesh style, meaning it has
-        // solid, blue sides.
-        vx_object_t *vxo_sphere = vxo_chain (vxo_mat_rotate_z (rad),
-                                             vxo_mat_translate2 (0, 0.5),
-                                             vxo_mat_scale (0.1),
-                                             vxo_sphere (vxo_mesh_style (vx_blue)));
-
-        // Then, we add this object to a buffer awaiting a render order
-        vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "rot-sphere"), vxo_sphere);
-
-        // Now we will render a red box that translates back and forth. This
-        // time, there is no rotation of our coordinate frame, so the box will
-        // just slide back and forth along the X axis. This box is rendered
-        // with a red line style, meaning it will appear as a red wireframe,
-        // in this case, with lines 2 px wide at a scale of 0.1 x 0.1 x 0.1.
-        vx_object_t *vxo_square = vxo_chain (vxo_mat_translate2 (osc, 0),
-                                             vxo_mat_scale (0.1),
-                                             vxo_box (vxo_lines_style (vx_red, 2)));
-
-        // We add this object to a different buffer so it may be rendered
-        // separately if desired
-        vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "osc-square"), vxo_square);
-
-
-        // Draw a default set of coordinate axes
-        vx_object_t *vxo_axe = vxo_chain (vxo_mat_scale (0.1), // 10 cm axes
-                                          vxo_axes ());
-        vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "axes"), vxo_axe);
-
-
-        // Now, we update both buffers
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "rot-sphere"));
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "osc-square"));
+                                                   vo));
+        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
+	image_u32_destroy (im);
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
 
         usleep (1000000/fps);
     }
-
-    if (isrc != NULL)
-        isrc->stop (isrc);
 
     return NULL;
 }
@@ -231,10 +179,10 @@ animate_thread (void *data)
 state_t *
 state_create (void)
 {
-    state_t *state = calloc (1, sizeof(*state));
+    state_t *state = (state_t*)calloc (1, sizeof(*state));
 
     state->vxworld = vx_world_create ();
-    state->vxeh = calloc (1, sizeof(*state->vxeh));
+    state->vxeh = (vx_event_handler_t*)calloc (1, sizeof(*state->vxeh));
     state->vxeh->key_event = key_event;
     state->vxeh->mouse_event = mouse_event;
     state->vxeh->touch_event = touch_event;
@@ -327,7 +275,7 @@ main (int argc, char *argv[])
 
     // Initialize a parameter gui
     state->pg = pg_create ();
-    pg_add_double_slider (state->pg, "sl1", "Slider 1", 0, 100, 50);
+    /*pg_add_double_slider (state->pg, "sl1", "Slider 1", 0, 100, 50);
     pg_add_int_slider    (state->pg, "sl2", "Slider 2", 0, 100, 25);
     pg_add_check_boxes (state->pg,
                         "cb1", "Check Box 1", 0,
@@ -337,9 +285,9 @@ main (int argc, char *argv[])
                     "but1", "Button 1",
                     "but2", "Button 2",
                     "but3", "Button 3",
-                    NULL);
+                    NULL);*/
 
-    parameter_listener_t *my_listener = calloc (1, sizeof(*my_listener));
+    parameter_listener_t *my_listener = (parameter_listener_t*)calloc (1, sizeof(*my_listener));
     my_listener->impl = state;
     my_listener->param_changed = my_param_changed;
     pg_add_listener (state->pg, my_listener);
@@ -348,7 +296,7 @@ main (int argc, char *argv[])
     pthread_create (&state->animate_thread, NULL, animate_thread, state);
 
     // This is the main loop
-    eecs467_gui_run (&state->vxapp, state->pg, 1024, 768);
+    eecs467_gui_run (&state->vxapp, state->pg, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     // Quit when GTK closes
     state->running = 0;

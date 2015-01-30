@@ -9,13 +9,6 @@ CXXFLAGS = $(CXXFLAGS_STD) \
      $(CFLAGS_LCMTYPES) \
      -O2
 
-CFLAGS = $(CFLAGS_STD) \
-     $(CFLAGS_VX_GTK) \
-         $(CFLAGS_IMAGESOURCE) \
-     $(CFLAGS_MATH) \
-     $(CFLAGS_COMMON) \
-     $(CFLAGS_LCMTYPES) \
-     -O2
 
 
 LDFLAGS = $(LDFLAGS_STD) \
@@ -45,7 +38,7 @@ $(LIB_EECS467): $(LIBEECS467_OBJS) $(LIBDEPS)
 
 $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
 $(BIN_EECS467_MAEBOT_EXAMPLE): maebot_example.o $(LIBDEPS)
 	@echo "\t$@"
@@ -53,7 +46,7 @@ $(BIN_EECS467_MAEBOT_EXAMPLE): maebot_example.o $(LIBDEPS)
 
 $(BIN_EECS467_MAEBOT_VIDEO_TELOP): maebot_video_teleop.o $(LIBDEPS)
 	@echo "\t$@"
-	@$(CC) -o $@ $^ $(LDFLAGS)
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 clean:
 	@rm -f *.o *~ *.a
