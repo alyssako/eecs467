@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <string>
 #include <vector>
-#include <queue>
+#include <deque>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
 #include "lcmtypes/maebot_targeting_laser_command_t.hpp"
@@ -23,10 +23,10 @@ class ApproxLaser
 {
     private:
         /* keep track of past five poses */
-        queue<maebot_pose_t> poses;
+        deque<maebot_pose_t> poses;
     public:
         /* find the two points the scan originated between */
-        FullLaserScanApprox findPts(LaserScan);
+        LaserScanApprox findPts(maebot_laser_scan_t& scan);
 
         /* add pose to deque (and delete oldest pose */
         bool addPose(maebot_pose_t newPose);
