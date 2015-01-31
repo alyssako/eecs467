@@ -1,3 +1,6 @@
+#ifndef APPROX_LASER_HPP
+#define APPROX_LASER_HPP
+
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -23,7 +26,7 @@ class ApproxLaser
 {
     private:
         /* keep track of past five poses */
-        deque<maebot_pose_t> poses;
+        std::deque<maebot_pose_t> poses;
     public:
         /* find the two points the scan originated between */
         LaserScanApprox findPts(maebot_laser_scan_t& scan);
@@ -34,3 +37,5 @@ class ApproxLaser
         /* check and see if the poses came through in the correct order */
         bool checkOrder(maebot_pose_t newPose);
 };
+
+#endif

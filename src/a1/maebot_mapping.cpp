@@ -60,7 +60,7 @@ struct state
     image_source_t *isrc;
     int fidx;
 
-    //lcm::LCM *lcm;
+    lcm_t *lcm;
     pthread_mutex_t lcm_mutex;
 
     pthread_mutex_t layer_mutex;
@@ -101,6 +101,7 @@ static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 {
     return 0;
 }
+
 static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_mouse_event_t * mouse)
 {
     state_t *state = (state_t *) vh->impl;
@@ -223,7 +224,7 @@ static void* send_cmds(void *data)
         }
         matd_destroy(click);
 
-        // Publish
+        // TODO Publish
         //state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
 
         pthread_mutex_unlock(&state->cmd_mutex);

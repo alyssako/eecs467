@@ -1,3 +1,6 @@
+#ifndef MAEBOT_HANDLERS_HPP
+#define MAEBOT_HANDLERS_HPP
+
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -18,26 +21,32 @@
 
 class MaebotPoseHandler
 {
+    private:
+        eecs467::OccupancyGrid* occupancy_grid;
+
     public:
         ~MaebotPoseHandler(){}
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
-                           const maebot_pose_t *msg,
-                           OccupancGrid occupancy_grid)
+                           const maebot_pose_t *msg)
         {
         }
 };
 
 class MaebotLaserScanHandler
 {
+    private:
+        eecs467::OccupancyGrid* occupancy_grid;
+
     public:
         ~MaebotLaserScanHandler(){}
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
-                           const maebot_laser_scan_t *msg,
-                           OccupancGrid occupancy_grid)
+                           const maebot_laser_scan_t *msg)
         {
         }
 };
+
+#endif
