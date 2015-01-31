@@ -25,6 +25,10 @@ class MaebotPoseHandler
         eecs467::OccupancyGrid* occupancy_grid;
 
     public:
+        MaebotPoseHandler(eecs467::OccupancyGrid* occupancy_grid_t){
+            occupancy_grid = occupancy_grid_t;
+        }
+        
         ~MaebotPoseHandler(){}
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
@@ -40,6 +44,10 @@ class MaebotLaserScanHandler
         eecs467::OccupancyGrid* occupancy_grid;
 
     public:
+        MaebotLaserScanHandler(eecs467::OccupancyGrid* occupancy_grid_t){
+            occupancy_grid = occupancy_grid_t;
+        }
+
         ~MaebotLaserScanHandler(){}
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
