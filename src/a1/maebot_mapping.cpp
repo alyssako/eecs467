@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -60,13 +61,15 @@ struct state
     image_source_t *isrc;
     int fidx;
 
-    lcm_t *lcm;
+    lcm::LCM *lcm;
     pthread_mutex_t lcm_mutex;
 
     pthread_mutex_t layer_mutex;
 
     vx_world_t *vw;
     zhash_t *layer_map; // <display, layer>
+
+    OccupancyGridMapper grid_mapper;
 };
 
 static int verbose = 0;
@@ -224,8 +227,8 @@ static void* send_cmds(void *data)
         }
         matd_destroy(click);
 
-        // TODO Publish
-        //state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
+        // Publish
+        state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
 
         pthread_mutex_unlock(&state->cmd_mutex);
 
@@ -299,7 +302,8 @@ int main(int argc, char **argv)
     vx_global_init();
 
     // === State initialization ============================
-    state_t *state = (state_t *) calloc(1, sizeof(state_t));
+    //state_t *state = (state_t *) calloc(1, sizeof(state_t));
+    state_t *state = new state_t;
     global_state = state;
     state->gopt = getopt_create();
     state->app.display_finished = display_finished;
@@ -317,6 +321,7 @@ int main(int argc, char **argv)
     state->joy_bounds = 10.0;
 
     state->running = 1;
+    state->lcm = new lcm::LCM;
     state->vw = vx_world_create();
     pthread_mutex_init(&state->layer_mutex, NULL);
     pthread_mutex_init(&state->cmd_mutex, NULL);
@@ -324,6 +329,8 @@ int main(int argc, char **argv)
     pthread_mutex_init(&state->render_mutex, NULL);
 
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
+
+    state->grid_mapper.setLCM(state->lcm);
     // === End =============================================
 
     // Clean up on Ctrl+C
@@ -355,22 +362,23 @@ int main(int argc, char **argv)
     // Video stuff?
 
     // LCM subscriptions
-    lcm::LCM lcm;
-    MaebotPoseHandler pose_handler;
-    MaebotLaserScanHandler laser_scan_handler;
-    lcm.subscribe("MAEBOT_POSE",
-                  &MaebotPoseHandler::handleMessage,
-                  &pose_handler);
-    lcm.subscribe("MAEBOT_LASER_SCAN",
-                  &MaebotLaserScanHandler::handleMessage,
-                  &laser_scan_handler);
+    MaebotPoseHandler pose_handler(&(state->grid_mapper.approx_laser));
+    MaebotLaserScanHandler laser_scan_handler(&(state->grid_mapper.occupancy_grid));
 
+    // TODO confirm channel names
+    state->lcm->subscribe("MAEBOT_POSE",
+                          &MaebotPoseHandler::handleMessage,
+                          &pose_handler);
+    state->lcm->subscribe("MAEBOT_LASER_SCAN",
+                          &MaebotLaserScanHandler::handleMessage,
+                          &laser_scan_handler);
+    std::cout << "listening" << std::endl;
 
     // Spin up thread(s)
     pthread_create(&state->cmd_thread, NULL, send_cmds, state);
     pthread_create(&state->render_thread, NULL, render_loop, state);
 
     // Loop forever
-    while(lcm.handle() == 0);
+    while(state->lcm->handle() == 0);
     vx_remote_display_source_destroy(remote);
 }
