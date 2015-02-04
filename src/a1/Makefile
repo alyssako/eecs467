@@ -18,14 +18,20 @@ CFLAGS = $(CFLAGS_STD) \
 	-O2
 
 LDFLAGS = $(LDFLAGS_STD) \
+	  $(LDFLAGS_VX_GL) \
 	  $(LDFLAGS_VX_GTK) \
 	  $(LDFLAGS_IMAGESOURCE) \
 	  $(LDFLAGS_MATH) \
 	  $(LDFLAGS_COMMON) \
-	  $(LDFLAGS_LCMTYPES)
+	  $(LDFLAGS_LCMTYPES) \
+	  $(LDFLAGS_VX) \
+	  $(LDFLAGS_GTK) \
+	  $(LDFLAGS_USB) \
+	  $(LDFLAGS_PNG) \
+	  $(LDFLAGS_DC1394)
 
 LIBDEPS = $(call libdeps, $(LDFLAGS))
-
+LIB_VXGTK = $(LIB_PATH)/libvxgtk.a
 LIB_EECS467 = $(LIB_PATH)/libeecs467.a
 LIBEECS467_OBJS = eecs467_util.o
 
@@ -34,9 +40,9 @@ BIN_EECS467_MAEBOT_MAPPING = $(BIN_PATH)/eecs467_maebot_mapping
 BIN_EECS467_MAEBOT_VIDEO_TELOP = $(BIN_PATH)/eecs467_maebot_video_telop
 BIN_LCM_SENDER = $(BIN_PATH)/lcm_sender
 
-ALL = $(LIB_EECS467) $(BIN_MAPPING_GUI) \
+ALL = $(LIB_EECS467) $(BIN_MAPPING_GUI) $(BIN_EECS467_APPROX_LASER) \
       $(BIN_EECS467_MAEBOT_MAPPING) $(BIN_EECS467_MAEBOT_VIDEO_TELOP) \
-      $(BIN_LCM_SENDER)
+      $(BIN_LCM_SENDER) $(BIN_EECS467_MOVING_LASER)
 
 all: $(ALL)
 
@@ -44,11 +50,19 @@ $(LIB_EECS467): $(LIBEECS467_OBJS) $(LIBDEPS)
 	@echo "\t$@"
 	@ar rc $@ $(LIBEECS467_OBJS)
 
-$(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS)
+$(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_VXGL) $(LIB_VX)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
 $(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o ApproxLaser.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_APPROX_LASER): ApproxLaser.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_MOVING_LASER): MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
