@@ -361,7 +361,6 @@ int main(int argc, char **argv)
     // Video stuff?
 
     // LCM subscriptions
-
     MovingLaser moving_laser(&(state->grid_mapper));
     ApproxLaser approx_laser(&moving_laser);
 
