@@ -21,7 +21,7 @@ LaserScan MovingLaser::findOrigin(LaserScanApprox approx_scan)
 {
 	LaserScan ls;
 	
-	for(int i = 0; i < approx_scan.scan.times.size(); i++)
+	for(uint i = 0; i < approx_scan.scan.times.size(); i++)
 		ls.origins.push_back(findOriginSingle(approx_scan.scan.times[i],
 			approx_scan.start_pose, approx_scan.end_pose));
 	
@@ -33,8 +33,8 @@ LaserScan MovingLaser::findOrigin(LaserScanApprox approx_scan)
 //Returns a new pose corresponding to the interpolated pose between a and b at time t.
 maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_pose_t b)
 {
-	if(t < a.utime || t > b.utime)
-		std::cout << "Out of range! t: " << t << ", a: " << a.utime << ", b: " << b.utime << std::endl;
+	/*if(t < a.utime || t > b.utime)
+		cout << "Out of range! t: " << t << ", a: " << a.utime << ", b: " << b.utime << endl;*/
 
 	float percent = (t - a.utime) / (b.utime - a.utime);
 	maebot_pose_t n;
