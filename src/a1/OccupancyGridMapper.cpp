@@ -1,7 +1,8 @@
 #include "OccupancyGridMapper.hpp"
 
 OccupancyGridMapper::OccupancyGridMapper() : 
-    occupancy_grid_(10, 10, 0.05)
+    occupancy_grid_(10, 10, 0.05),
+    approx_laser_(this)
 {
 }
 
@@ -21,10 +22,10 @@ void OccupancyGridMapper::updateGrid()
 {
 }
 
-ApproxLaser& OccupancyGridMapper::getApproxLaser()
-{
-    return approx_laser_;
-}
+//ApproxLaser& OccupancyGridMapper::getApproxLaser()
+//{
+//    return approx_laser_;
+//}
 
 MovingLaser& OccupancyGridMapper::getMovingLaser() {
     return moving_laser_;
