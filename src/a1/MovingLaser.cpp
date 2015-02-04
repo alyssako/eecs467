@@ -16,10 +16,26 @@
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
 #include "MovingLaser.hpp"
+//Creates and returns a LaserScan and fills its origins vector.
+LaserScan MovingLaser::findOrigin(LaserScanApprox approx_scan)
+{
+	LaserScan ls;
+	
+	for(int i = 0; i < approx_scan.scan.times.size(); i++)
+		ls.origins.push_back(findOriginSingle(approx_scan.scan.times[i],
+			approx_scan.start_pose, approx_scan.end_pose));
+	
+	ls.scan = approx_scan.scan;
+	
+	return ls;
+}
 
 //Returns a new pose corresponding to the interpolated pose between a and b at time t.
 maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_pose_t b)
 {
+	if(t < a.utime || t > b.utime)
+		std::cout << "Out of range! t: " << t << ", a: " << a.utime << ", b: " << b.utime << std::endl;
+
 	float percent = (t - a.utime) / (b.utime - a.utime);
 	maebot_pose_t n;
 	n.x = (b.x - a.x) * percent + a.x;
