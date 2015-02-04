@@ -21,7 +21,7 @@ LaserScan MovingLaser::findOrigin(LaserScanApprox approx_scan)
 {
 	LaserScan ls;
 	
-	for(int i = 0; i < approx_scan.scan.times.size(); i++)
+	for(unsigned int i = 0; i < approx_scan.scan.times.size(); i++)
 		ls.origins.push_back(findOriginSingle(approx_scan.scan.times[i],
 			approx_scan.start_pose, approx_scan.end_pose));
 	

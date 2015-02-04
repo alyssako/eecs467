@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <deque>
+#include <queue>
 #include <iostream>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
@@ -29,11 +30,12 @@ class ApproxLaser
     private:
         /* keep track of past five poses */
         std::deque<maebot_pose_t> poses;
-        OccupancyGridMapper *mapper;
+        std::queue<maebot_laser_scan_t> lasers;
+        MovingLaser *moving_laser;
 
     public:
-        ApproxLaser(OccupancyGridMapper *mapper_t){
-            mapper = mapper_t;
+        ApproxLaser(MovingLaser *laser_t){
+            moving_laser = laser_t;
         }
 
         ~ApproxLaser(){}

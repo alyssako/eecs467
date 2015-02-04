@@ -18,7 +18,7 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
-#include "OccupancyGridMapper.hpp"
+#include "ApproxLaser.hpp"
 
 class MaebotPoseHandler
 {

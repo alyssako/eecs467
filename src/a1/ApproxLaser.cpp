@@ -2,8 +2,26 @@
 #include <cassert>
 #include <iostream>
 
-bool ApproxLaser::findPts(const maebot_laser_scan_t *scan)
+bool ApproxLaser::findPts(const maebot_laser_scan_t *scan_t)
 {
+    if(poses.empty()){
+        std::cout << "waiting for initial pose" << std::endl;
+        lasers.push(*scan_t);
+        return false;
+    }
+
+    maebot_laser_scan_t *scan;
+    lasers.push(*scan_t);
+    scan = &lasers.front();
+
+    if(poses.size() == 1){
+        maebot_pose_t start = poses.front();
+        LaserScanApprox retval = {start, start, *scan};
+
+        lasers.pop();
+        return true;
+    }
+
     maebot_pose_t start, end;
     bool found = false;
     std::deque<maebot_pose_t>::iterator it;
@@ -22,6 +40,8 @@ bool ApproxLaser::findPts(const maebot_laser_scan_t *scan)
 
     start = *(it+1);
     LaserScanApprox retval = {start, end, *scan};
+
+    lasers.pop();
     return found;
 }
 
@@ -52,7 +72,7 @@ bool ApproxLaser::addPose(const maebot_pose_t* newPose)
     return true;
 }
 
-bool ApproxLaser::checkOrder(maebot_pose_t *newPose)
+bool ApproxLaser::checkOrder(const maebot_pose_t *newPose)
 {
     if(!poses.empty())
         return newPose->utime > poses.front().utime;
