@@ -38,8 +38,9 @@ class OccupancyGridMapper
         MovingLaser moving_laser_;
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
+
     public:
-        OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid);
+        OccupancyGridMapper();
         ~OccupancyGridMapper();
 
         void setLCM(lcm::LCM *lcm_t);

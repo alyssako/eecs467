@@ -36,7 +36,7 @@ bool ApproxLaser::addPose(maebot_pose_t newPose)
     if(checkOrder(&newPose))
     {
         std::cout << "about to add this" << std::endl;
-        //poses.push_front(newPose);
+        poses.push_front(newPose);
         //test.push_front(1);
         std::cout << "added" << std::endl;
 

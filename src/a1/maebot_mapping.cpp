@@ -302,7 +302,7 @@ int main(int argc, char **argv)
     vx_global_init();
 
     // === State initialization ============================
-    state_t *state = (state_t *) calloc(1, sizeof(state_t));
+    state_t *state = new state_t;
     global_state = state;
     state->gopt = getopt_create();
     state->app.display_finished = display_finished;

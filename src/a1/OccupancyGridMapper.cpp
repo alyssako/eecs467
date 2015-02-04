@@ -1,8 +1,8 @@
 #include "OccupancyGridMapper.hpp"
 
-OccupancyGridMapper::OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid)
+OccupancyGridMapper::OccupancyGridMapper() : 
+    occupancy_grid_(10, 10, 0.05)
 {
-    occupancy_grid_.fromLCM(lcm_occupancy_grid);
 }
 
 OccupancyGridMapper::~OccupancyGridMapper()

@@ -6,16 +6,14 @@ CXXFLAGS = $(CXXFLAGS_STD) \
 	$(CFLAGS_IMAGESOURCE) \
 	$(CFLAGS_MATH) \
 	$(CFLAGS_COMMON) \
-	$(CFLAGS_LCMTYPES) \
-	-O2
+	$(CFLAGS_LCMTYPES)
 
 CFLAGS = $(CFLAGS_STD) \
 	$(CFLAGS_VX_GTK) \
 	$(CFLAGS_IMAGESOURCE) \
 	$(CFLAGS_MATH) \
 	$(CFLAGS_COMMON) \
-	$(CFLAGS_LCMTYPES) \
-	-O2
+	$(CFLAGS_LCMTYPES)
 
 LDFLAGS = $(LDFLAGS_STD) \
 	  $(LDFLAGS_VX_GL) \
@@ -28,7 +26,8 @@ LDFLAGS = $(LDFLAGS_STD) \
 	  $(LDFLAGS_GTK) \
 	  $(LDFLAGS_USB) \
 	  $(LDFLAGS_PNG) \
-	  $(LDFLAGS_DC1394)
+	  $(LDFLAGS_DC1394) \
+      $(LDFLAGS_MAPPING)
 
 LIBDEPS = $(call libdeps, $(LDFLAGS))
 LIB_VXGTK = $(LIB_PATH)/libvxgtk.a
@@ -39,8 +38,6 @@ BIN_MAPPING_GUI = $(BIN_PATH)/mapping_gui
 BIN_EECS467_MAEBOT_MAPPING = $(BIN_PATH)/eecs467_maebot_mapping
 BIN_EECS467_MAEBOT_VIDEO_TELOP = $(BIN_PATH)/eecs467_maebot_video_telop
 BIN_LCM_SENDER = $(BIN_PATH)/lcm_sender
-
-OCCUPANCY_GRID_PATH = /afs/umich.edu/user/a/l/alyssako/eecs467/eecs467Assignment1/src/mapping
 
 ALL = $(LIB_EECS467) $(BIN_MAPPING_GUI) $(BIN_EECS467_APPROX_LASER) \
       $(BIN_EECS467_MAEBOT_MAPPING) $(BIN_EECS467_MAEBOT_VIDEO_TELOP) \
@@ -56,19 +53,19 @@ $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_V
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
-$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
-	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS)
-
-$(BIN_EECS467_APPROX_LASER): ApproxLaser.o $(LIB_EECE467) $(LIBDEPS)
-	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS)
-
-$(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o $(OCCUPANCY_GRID_PATH)/occupancy_grid.cpp $(LIB_EECE467) $(LIBDEPS)
-	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS)
-
 $(BIN_EECS467_MOVING_LASER): MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_APPROX_LASER): ApproxLaser.o MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
