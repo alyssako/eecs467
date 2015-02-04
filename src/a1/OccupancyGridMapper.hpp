@@ -29,6 +29,7 @@ class OccupancyGridMapper
     private:
         std::queue<maebot_laser_scan_t> laser_scans_;
         pthread_mutex_t laser_scans_mutex_;
+        
         std::queue<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
         
