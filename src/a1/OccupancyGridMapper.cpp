@@ -1,6 +1,5 @@
 #include "OccupancyGridMapper.hpp"
 
-
 OccupancyGridMapper::OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid)
 {
     occupancy_grid_.fromLCM(lcm_occupancy_grid);
@@ -8,6 +7,10 @@ OccupancyGridMapper::OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_g
 
 OccupancyGridMapper::~OccupancyGridMapper()
 {
+}
+
+void OccupancyGridMapper::setLCM(lcm::LCM *lcm_t){
+    lcm = lcm_t;
 }
 
 void OccupancyGridMapper::calculateLaserOrigins()

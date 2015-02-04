@@ -1,4 +1,8 @@
+#ifndef MAEBOT_HANDLERS_HPP
+#define MAEBOT_HANDLERS_HPP
+
 #include <stdio.h>
+#include <iostream>
 #include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -18,26 +22,43 @@
 
 class MaebotPoseHandler
 {
+    private:
+        ApproxLaser *approx_laser;
+
     public:
+        MaebotPoseHandler(ApproxLaser *approx_laser_t){
+            approx_laser = approx_laser_t;
+        }
+        
         ~MaebotPoseHandler(){}
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
-                           const maebot_pose_t *msg,
-                           OccupancGrid occupancy_grid)
-        {
+                           const maebot_pose_t *msg)
+        {   
+            //std::cout << "Got pose" << std::endl;
+            if(approx_laser->addPose(*msg))
+                std::cout << "Pose added" << std::endl;
         }
 };
 
 class MaebotLaserScanHandler
 {
+    private:
+        eecs467::OccupancyGrid* occupancy_grid;
+
     public:
+        MaebotLaserScanHandler(eecs467::OccupancyGrid* occupancy_grid_t){
+            occupancy_grid = occupancy_grid_t;
+        }
+
         ~MaebotLaserScanHandler(){}
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
-                           const maebot_laser_scan_t *msg,
-                           OccupancGrid occupancy_grid)
+                           const maebot_laser_scan_t *msg)
         {
         }
 };
+
+#endif

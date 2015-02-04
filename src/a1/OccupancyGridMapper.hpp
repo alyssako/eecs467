@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <deque>
+#include <iostream>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
 #include "lcmtypes/maebot_targeting_laser_command_t.hpp"
@@ -21,8 +22,8 @@
 #include "lcmtypes/maebot_occupancy_grid_t.hpp"
 
 #include "ApproxLaser.hpp"
-#include "occupancy_grid.hpp"
-#include "occupancy_grid_utils.hpp"
+#include "mapping/occupancy_grid.hpp"
+#include "mapping/occupancy_grid_utils.hpp"
 
 class OccupancyGridMapper
 {
@@ -36,9 +37,12 @@ class OccupancyGridMapper
         LaserScanApprox approx_;
         MovingLaser moving_laser_;
         OccupancyGrid occupancy_grid_;
+        lcm::LCM *lcm;
     public:
         OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid);
         ~OccupancyGridMapper();
+
+        void setLCM(lcm::LCM *lcm_t);
         void calculateLaserOrigins();
         void updateGrid();
         

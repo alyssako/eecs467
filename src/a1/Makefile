@@ -32,10 +32,11 @@ LIBEECS467_OBJS = eecs467_util.o
 BIN_MAPPING_GUI = $(BIN_PATH)/mapping_gui
 BIN_EECS467_MAEBOT_MAPPING = $(BIN_PATH)/eecs467_maebot_mapping
 BIN_EECS467_MAEBOT_VIDEO_TELOP = $(BIN_PATH)/eecs467_maebot_video_telop
-#BIN_HANDLER_TEST = $(BIN_PATH)/handler_test
+BIN_LCM_SENDER = $(BIN_PATH)/lcm_sender
 
 ALL = $(LIB_EECS467) $(BIN_MAPPING_GUI) \
-      $(BIN_EECS467_MAEBOT_MAPPING) $(BIN_EECS467_MAEBOT_VIDEO_TELOP)
+      $(BIN_EECS467_MAEBOT_MAPPING) $(BIN_EECS467_MAEBOT_VIDEO_TELOP) \
+      $(BIN_LCM_SENDER)
 
 all: $(ALL)
 
@@ -47,13 +48,17 @@ $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
-$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o $(LIBDEPS)
+$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o ApproxLaser.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_EECS467_MAEBOT_VIDEO_TELOP): maebot_video_teleop.o $(LIBDEPS)
 	@echo "\t$@"
 	@$(CC) -o $@ $^ $(LDFLAGS)
+
+$(BIN_LCM_SENDER): lcm_sender.o $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 clean:
 	@rm -f *.o *~ *.a

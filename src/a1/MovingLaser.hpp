@@ -38,6 +38,8 @@ class MovingLaser
 {
     public:
         LaserScan findOrigin(LaserScanApprox approx_scan);
+        maebot_pose_t findOriginSingle(int64_t, maebot_pose_t, maebot_pose_t);
+        float angle_diff(float, float);
 };
 
 #endif
