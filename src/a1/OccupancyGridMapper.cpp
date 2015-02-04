@@ -21,6 +21,19 @@ void OccupancyGridMapper::updateGrid()
 {
 }
 
+ApproxLaser& OccupancyGridMapper::getApproxLaser()
+{
+    return approx_laser_;
+}
+
+MovingLaser& OccupancyGridMapper::getMovingLaser() {
+    return moving_laser_;
+}
+
+eecs467::OccupancyGrid& OccupancyGridMapper::getOccupancyGrid() {
+    return occupancy_grid_;
+}
+
 void OccupancyGridMapper::addLaserScan(maebot_laser_scan_t input_scan)
 {
     pthread_mutex_lock(&laser_scans_mutex_);

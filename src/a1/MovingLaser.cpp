@@ -15,10 +15,12 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
+#include "MovingLaser.hpp"
+
 //Returns a new pose corresponding to the interpolated pose between a and b at time t.
 maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_pose_t b)
 {
-	float percent = (t - a.time) / (b.time - a.time);
+	float percent = (t - a.utime) / (b.utime - a.utime);
 	maebot_pose_t n;
 	n.x = (b.x - a.x) * percent + a.x;
 	n.y = (b.y - a.y) * percent + a.y;
@@ -28,7 +30,7 @@ maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_p
 }
 
 //Returns the difference b-a (radians) in the range [-PI, PI)
-float angle_diff(float a, float b)
+float MovingLaser::angle_diff(float a, float b)
 {
 	float d = b - a;
 	while(d >= 3.1415926) d -= 3.1415926;

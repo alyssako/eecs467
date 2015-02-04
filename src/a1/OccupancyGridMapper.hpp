@@ -9,7 +9,7 @@
 #include <signal.h>
 #include <string>
 #include <vector>
-#include <deque>
+#include <queue>
 #include <iostream>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
@@ -34,9 +34,9 @@ class OccupancyGridMapper
         std::queue<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
         
-        LaserScanApprox approx_;
+        ApproxLaser approx_laser_;
         MovingLaser moving_laser_;
-        OccupancyGrid occupancy_grid_;
+        eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
     public:
         OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid);
@@ -48,6 +48,9 @@ class OccupancyGridMapper
         
         void addLaserScan(maebot_laser_scan_t input_scan);
         void addPose(maebot_pose_t input_pose);
+        ApproxLaser& getApproxLaser();
+        MovingLaser& getMovingLaser();
+        eecs467::OccupancyGrid& getOccupancyGrid();
 };
 
 #endif

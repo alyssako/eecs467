@@ -302,8 +302,7 @@ int main(int argc, char **argv)
     vx_global_init();
 
     // === State initialization ============================
-    //state_t *state = (state_t *) calloc(1, sizeof(state_t));
-    state_t *state = new state_t;
+    state_t *state = (state_t *) calloc(1, sizeof(state_t));
     global_state = state;
     state->gopt = getopt_create();
     state->app.display_finished = display_finished;
@@ -362,8 +361,8 @@ int main(int argc, char **argv)
     // Video stuff?
 
     // LCM subscriptions
-    MaebotPoseHandler pose_handler(&(state->grid_mapper.approx_laser));
-    MaebotLaserScanHandler laser_scan_handler(&(state->grid_mapper.occupancy_grid));
+    MaebotPoseHandler pose_handler(&(state->grid_mapper.getApproxLaser()));
+    MaebotLaserScanHandler laser_scan_handler(&(state->grid_mapper.getOccupancyGrid()));
 
     // TODO confirm channel names
     state->lcm->subscribe("MAEBOT_POSE",

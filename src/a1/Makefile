@@ -40,6 +40,8 @@ BIN_EECS467_MAEBOT_MAPPING = $(BIN_PATH)/eecs467_maebot_mapping
 BIN_EECS467_MAEBOT_VIDEO_TELOP = $(BIN_PATH)/eecs467_maebot_video_telop
 BIN_LCM_SENDER = $(BIN_PATH)/lcm_sender
 
+OCCUPANCY_GRID_PATH = /afs/umich.edu/user/a/l/alyssako/eecs467/eecs467Assignment1/src/mapping
+
 ALL = $(LIB_EECS467) $(BIN_MAPPING_GUI) $(BIN_EECS467_APPROX_LASER) \
       $(BIN_EECS467_MAEBOT_MAPPING) $(BIN_EECS467_MAEBOT_VIDEO_TELOP) \
       $(BIN_LCM_SENDER) $(BIN_EECS467_MOVING_LASER)
@@ -54,11 +56,15 @@ $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_V
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
-$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o ApproxLaser.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_EECS467_APPROX_LASER): ApproxLaser.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o $(OCCUPANCY_GRID_PATH)/occupancy_grid.cpp $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
