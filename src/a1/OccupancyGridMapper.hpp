@@ -27,17 +27,17 @@
 class OccupancyGridMapper
 {
     private:
-        //std::queue<maebot_laser_scan_t> laser_scans_;
+        std::queue<maebot_laser_scan_t> laser_scans_;
         pthread_mutex_t laser_scans_mutex_;
         
-        //std::queue<maebot_pose_t> poses_;
+        std::queue<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
         
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
 
     public:
-        OccupancyGridMapper();
+        OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid);
         ~OccupancyGridMapper();
 
         void setLCM(lcm::LCM *lcm_t);

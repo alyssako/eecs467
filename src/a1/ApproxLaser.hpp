@@ -29,25 +29,27 @@ class ApproxLaser
 {
     private:
         /* keep track of past five poses */
-        std::deque<maebot_pose_t> poses;
-        std::queue<maebot_laser_scan_t> lasers;
-        MovingLaser *moving_laser;
+        std::deque<maebot_pose_t> poses_;
+        //std::deque<maebot_laser_scan_t> lasers_;
+        //MovingLaser *moving_laser_;
 
     public:
-        ApproxLaser(MovingLaser *laser_t){
+        /*ApproxLaser(MovingLaser *laser_t){
             moving_laser = laser_t;
-        }
+        }*/
 
         ~ApproxLaser(){}
 
         /* find the two points the scan originated between */
-        bool findPts(const maebot_laser_scan_t *scan);
+        LaserScanRange findPts(const maebot_laser_scan_t *scan);
 
         /* add pose to deque (and delete oldest pose */
-        bool addPose(const maebot_pose_t *newPose);
+        void addPose(const maebot_pose_t *newPose);
 
-        /* check and see if the poses came through in the correct order */
-        bool checkOrder(const maebot_pose_t *newPose);
+        bool containsPoses()
+        {
+            return poses_.size() > 0;
+        }
 };
 
 #endif

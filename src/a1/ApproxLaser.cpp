@@ -2,80 +2,55 @@
 #include <cassert>
 #include <iostream>
 
-bool ApproxLaser::findPts(const maebot_laser_scan_t *scan_t)
+LaserScanRange ApproxLaser::findPts(const maebot_laser_scan_t *scan_t)
 {
-    if(poses.empty()){
+    if(poses_.empty()){
         std::cout << "waiting for initial pose" << std::endl;
-        lasers.push(*scan_t);
-        return false;
+        //lasers_.push(*scan_t);
+        exit(1); // if we called this without adding a pose first, we dun fucked up
     }
 
-    maebot_laser_scan_t *scan;
-    lasers.push(*scan_t);
-    scan = &lasers.front();
+    //maebot_laser_scan_t *scan;
+    //lasers_.push(*scan_t);
+    //scan = &lasers_.front();
 
-    if(poses.size() == 1){
-        maebot_pose_t start = poses.front();
-        LaserScanApprox retval = {start, start, *scan};
-
-        lasers.pop();
-        return true;
-    }
-
+    // scrap the first lidar scan because we don't have two poses to interpolate from
     maebot_pose_t start, end;
-    bool found = false;
-    std::deque<maebot_pose_t>::iterator it;
-    for(it = poses.begin(); it != poses.end(); ++it)
-    {
-        if(it->utime > scan->times[0] && (it+1)->utime < scan->times[0])
+    LaserScanRange retval = {false, start, end, *scan};
+    if(poses_.size() != 1){
+        bool found = false;
+        std::deque<maebot_pose_t>::iterator iter;
+        for(iter = poses_.begin(); iter != poses_.end(); ++iter)
         {
-            end = *it;
-            found = true;
-            break;
+            // the end time (scan->utime) of the lidar scan should be equal to the
+            // utime of the pose
+            if(iter->utime == scan->utime)
+            {
+                end = *iter;
+                found = true;
+                break;
+            }
         }
+        // assert that range of poses is correct
+        assert(found);
+        assert((it-1) >= poses_.begin());
+
+        start = *(it-1);
+        retval.valid = true;
+        retval.start_pose = start;
+        retval.end_pose = end;
     }
-    // assert that range of poses is correct
-    assert(found);
-    assert((it+1) != poses.end());
 
-    start = *(it+1);
-    LaserScanApprox retval = {start, end, *scan};
-
-    lasers.pop();
-    return found;
+    //lasers_.pop();
+    return retval;
 }
 
-bool ApproxLaser::addPose(const maebot_pose_t* newPose)
+void ApproxLaser::addPose(const maebot_pose_t* newPose)
 {
-    if(poses.size() == 5)
+    if(poses_.size() == 5)
     {
-        poses.pop_back();
+        poses_.pop_back();
     }
     
-    if(checkOrder(newPose))
-    {
-        poses.push_front(*newPose);
-        return true;
-    }
-
-    std::deque<maebot_pose_t>::iterator it;
-    for(it = poses.begin(); it != poses.end(); ++it)
-    {
-        if(it->utime < newPose->utime)
-            break;
-    }
-    
-    if(it == poses.end())
-        return false;
-
-    poses.insert(it, *newPose);
-    return true;
-}
-
-bool ApproxLaser::checkOrder(const maebot_pose_t *newPose)
-{
-    if(!poses.empty())
-        return newPose->utime > poses.front().utime;
-
-    return true;
+    poses_.push_front(*newPose);
 }
