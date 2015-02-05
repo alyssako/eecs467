@@ -6,6 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include <vector>
+#include <lcm/lcm-cpp.hpp>
 
 // core api
 #include "vx/vx.h"
@@ -27,6 +28,10 @@
 #include "imagesource/image_convert.h"
 
 #include "eecs467_util.h"    // This is where a lot of the internals live
+
+#include "mapping/occupancy_grid.hpp"
+#include "mapping/occupancy_grid_utils.hpp"
+#include "OccupancyGridGuiHandler.hpp"
 
 #define SCREEN_WIDTH 100
 #define SCREEN_HEIGHT 100
@@ -54,6 +59,10 @@ struct state {
 
     // threads
     pthread_t animate_thread;
+    
+    // LCM stuff
+    lcm::LCM *lcm;
+    pthread_mutex_t lcm_mutex;
 
     // for accessing the arrays
     pthread_mutex_t mutex;
@@ -124,7 +133,6 @@ static int to_grayscale(int a)
 	return a + 128;
 }
 
-
 // === Your code goes here ================================================
 // The render loop handles your visualization updates. It is the function run
 // by the animate_thread. It periodically renders the contents on the
@@ -135,7 +143,7 @@ animate_thread (void *data)
     const int fps = 60;
     state_t *state = (state_t*)data;
 
-    vector<vector<int> > grid;
+    /*vector<vector<int> > grid;
     for(int i = 0; i < 10; i++)
     {
 	vector<int> g;
@@ -144,33 +152,33 @@ animate_thread (void *data)
 		g.push_back(rand() % 255 - 128);
 	}
 	grid.push_back(g);
-    }
+    }*/
 
     // Continue running until we are signaled otherwise. This happens
     // when the window is closed/Ctrl+C is received.
-    while (state->running) {
-
-	image_u32_t *im = image_u32_create(10, 10);
-	for(int y = 0; y < im->height; y++)
-	{
-		for(int x = 0; x < im->width; x++)
+    while (state->running) 
+    {
+		image_u32_t *im = image_u32_create(10, 10);
+		for(int y = 0; y < im->height; y++)
 		{
-			int a = 255; //alpha transparency value.
-			int v = to_grayscale(grid[x][y]) % 255;
-			im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
+			for(int x = 0; x < im->width; x++)
+			{
+				int a = 255; //alpha transparency value.
+				int v = to_grayscale(grid[x][y]) % 255;
+				im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
+			}
 		}
-	}
-	vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
-	const double scale = 1./im->width;
-                    vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
-                                        vxo_chain (vxo_mat_scale3 (scale, scale, 1.0),
-                                                   vxo_mat_translate3 (-im->width/2., -im->height/2., 0.),
-                                                   vo));
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
-	image_u32_destroy (im);
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
+		vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
+		const double scale = 1./im->width;
+		                vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
+		                                    vxo_chain (vxo_mat_scale3 (scale, scale, 1.0),
+		                                               vxo_mat_translate3 (-im->width/2., -im->height/2., 0.),
+		                                               vo));
+		vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
+		image_u32_destroy (im);
+		vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
 
-        usleep (1000000/fps);
+		usleep (1000000/fps);
     }
 
     return NULL;
@@ -224,6 +232,14 @@ main (int argc, char *argv[])
 {
     eecs467_init (argc, argv);
     state_t *state = state_create ();
+    
+    OccupancyGrid *grid = new OccupancyGrid;
+    OccupancyGridGuiHandler gui_handler(grid);
+    state->lcm = new lcm::LCM;
+    pthread_mutex_init(&state->lcm_mutex, NULL);
+    state->lcm->subscribe("OCCUPANCY_GRID_GUI",
+                          &OccupancyGridGuiHandler::handleMessage,
+                          &gui_handler);
 
     // Parse arguments from the command line, showing the help
     // screen if required
@@ -301,7 +317,8 @@ main (int argc, char *argv[])
     // Quit when GTK closes
     state->running = 0;
     pthread_join (state->animate_thread, NULL);
-
+    
+    while(0 == state->lcm->handle());
     // Cleanup
     free (my_listener);
     state_destroy (state);

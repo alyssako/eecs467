@@ -231,6 +231,8 @@ static void* send_cmds(void *data)
         state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
 
         pthread_mutex_unlock(&state->cmd_mutex);
+        
+        state->lcm->publish("OCCUPANCY_GRID_GUI", &grid_mapper.occupancy_grid.toLCM());
 
         usleep(1000000/Hz);
     }
