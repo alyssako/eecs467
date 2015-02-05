@@ -28,8 +28,9 @@ struct LaserScan
 };
 
 /* store the lidar scan and the two poses it originated between */
-struct LaserScanApprox
+struct LaserScanRange
 {
+    bool valid;
     maebot_pose_t start_pose;
     maebot_pose_t end_pose;
     maebot_laser_scan_t scan;
@@ -38,15 +39,8 @@ struct LaserScanApprox
 /* functor that figure out where each individual laser originated from */
 class MovingLaser
 {
-    private:
-        OccupancyGridMapper *grid_mapper;
-
     public:
-        MovingLaser(OccupancyGridMapper *mapper){
-            grid_mapper = mapper;
-        };
-
-        LaserScan findOrigin(LaserScanApprox approx_scan);
+        LaserScan findOrigin(LaserScanRange approx_scan);
         maebot_pose_t findOriginSingle(int64_t, maebot_pose_t, maebot_pose_t);
         float angle_diff(float, float);
 };

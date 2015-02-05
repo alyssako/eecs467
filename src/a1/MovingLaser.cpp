@@ -17,7 +17,7 @@
 
 #include "MovingLaser.hpp"
 //Creates and returns a LaserScan and fills its origins vector.
-LaserScan MovingLaser::findOrigin(LaserScanApprox approx_scan)
+LaserScan MovingLaser::findOrigin(LaserScanRange approx_scan)
 {
 	LaserScan ls;
 	
