@@ -361,10 +361,12 @@ int main(int argc, char **argv)
     // Video stuff?
 
     // LCM subscriptions
-    MaebotPoseHandler pose_handler(&(state->grid_mapper.getApproxLaser()));
-    MaebotLaserScanHandler laser_scan_handler(&(state->grid_mapper.getOccupancyGrid()));
+    MovingLaser moving_laser(&(state->grid_mapper));
+    ApproxLaser approx_laser(&moving_laser);
 
-    // TODO confirm channel names
+    MaebotPoseHandler pose_handler(&approx_laser);
+    MaebotLaserScanHandler laser_scan_handler(&approx_laser);
+
     state->lcm->subscribe("MAEBOT_POSE",
                           &MaebotPoseHandler::handleMessage,
                           &pose_handler);

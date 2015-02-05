@@ -6,14 +6,16 @@ CXXFLAGS = $(CXXFLAGS_STD) \
 	$(CFLAGS_IMAGESOURCE) \
 	$(CFLAGS_MATH) \
 	$(CFLAGS_COMMON) \
-	$(CFLAGS_LCMTYPES)
+	$(CFLAGS_LCMTYPES) \
+    -O2
 
 CFLAGS = $(CFLAGS_STD) \
 	$(CFLAGS_VX_GTK) \
 	$(CFLAGS_IMAGESOURCE) \
 	$(CFLAGS_MATH) \
 	$(CFLAGS_COMMON) \
-	$(CFLAGS_LCMTYPES)
+	$(CFLAGS_LCMTYPES) \
+    -O2
 
 LDFLAGS = $(LDFLAGS_STD) \
 	  $(LDFLAGS_VX_GL) \
@@ -53,7 +55,7 @@ $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_V
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
-$(BIN_EECS467_MOVING_LASER): MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_MOVING_LASER): MovingLaser.o OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 

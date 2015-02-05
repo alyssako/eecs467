@@ -21,21 +21,18 @@
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 #include "lcmtypes/maebot_occupancy_grid_t.hpp"
 
-#include "ApproxLaser.hpp"
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 
 class OccupancyGridMapper
 {
     private:
-        std::queue<maebot_laser_scan_t> laser_scans_;
+        //std::queue<maebot_laser_scan_t> laser_scans_;
         pthread_mutex_t laser_scans_mutex_;
         
-        std::queue<maebot_pose_t> poses_;
+        //std::queue<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
         
-        ApproxLaser approx_laser_;
-        MovingLaser moving_laser_;
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
 
@@ -53,8 +50,8 @@ class OccupancyGridMapper
         
         void addLaserScan(maebot_laser_scan_t input_scan);
         void addPose(maebot_pose_t input_pose);
-        ApproxLaser& getApproxLaser();
-        MovingLaser& getMovingLaser();
+        //ApproxLaser& getApproxLaser();
+        //MovingLaser& getMovingLaser();
         eecs467::OccupancyGrid& getOccupancyGrid();
 };
 

@@ -18,6 +18,8 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
+#include "OccupancyGridMapper.hpp"
+
 /* store lidar scans and associated poses where they originated */
 struct LaserScan
 {
@@ -36,7 +38,14 @@ struct LaserScanApprox
 /* functor that figure out where each individual laser originated from */
 class MovingLaser
 {
+    private:
+        OccupancyGridMapper *grid_mapper;
+
     public:
+        MovingLaser(OccupancyGridMapper *mapper){
+            grid_mapper = mapper;
+        };
+
         LaserScan findOrigin(LaserScanApprox approx_scan);
         maebot_pose_t findOriginSingle(int64_t, maebot_pose_t, maebot_pose_t);
         float angle_diff(float, float);

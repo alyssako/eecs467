@@ -18,7 +18,7 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
-#include "OccupancyGridMapper.hpp"
+#include "ApproxLaser.hpp"
 
 class MaebotPoseHandler
 {
@@ -36,20 +36,19 @@ class MaebotPoseHandler
                            const std::string& channel,
                            const maebot_pose_t *msg)
         {   
-            //std::cout << "Got pose" << std::endl;
-            if(approx_laser->addPose(*msg))
-                std::cout << "Pose added" << std::endl;
+            if(!approx_laser->addPose(msg))
+                std::cerr << "addPose failed" << std::endl;
         }
 };
 
 class MaebotLaserScanHandler
 {
     private:
-        eecs467::OccupancyGrid* occupancy_grid;
+        ApproxLaser *approx_laser;
 
     public:
-        MaebotLaserScanHandler(eecs467::OccupancyGrid* occupancy_grid_t){
-            occupancy_grid = occupancy_grid_t;
+        MaebotLaserScanHandler(ApproxLaser* approx_laser_t){
+            approx_laser = approx_laser_t;
         }
 
         ~MaebotLaserScanHandler(){}
@@ -58,6 +57,8 @@ class MaebotLaserScanHandler
                            const std::string& channel,
                            const maebot_laser_scan_t *msg)
         {
+            if(approx_laser->findPts(msg))
+                std::cout << "findPts" << std::endl;
         }
 };
 

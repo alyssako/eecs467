@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <deque>
+#include <queue>
 #include <iostream>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
@@ -20,6 +21,7 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
+#include "OccupancyGridMapper.hpp"
 #include "MovingLaser.hpp"
 
 /* class to figure out approximately where laser scan originated from */
@@ -28,24 +30,24 @@ class ApproxLaser
     private:
         /* keep track of past five poses */
         std::deque<maebot_pose_t> poses;
-        //std::deque<int> test (5, 100);
+        std::queue<maebot_laser_scan_t> lasers;
+        MovingLaser *moving_laser;
 
     public:
-        ApproxLaser(){
-            std::cout << "init" << std::endl;
-            //poses = new std::deque<maebot_pose_t> (4);
+        ApproxLaser(MovingLaser *laser_t){
+            moving_laser = laser_t;
         }
 
         ~ApproxLaser(){}
 
         /* find the two points the scan originated between */
-        LaserScanApprox findPts(maebot_laser_scan_t& scan);
+        bool findPts(const maebot_laser_scan_t *scan);
 
         /* add pose to deque (and delete oldest pose */
-        bool addPose(maebot_pose_t newPose);
+        bool addPose(const maebot_pose_t *newPose);
 
         /* check and see if the poses came through in the correct order */
-        bool checkOrder(maebot_pose_t *newPose);
+        bool checkOrder(const maebot_pose_t *newPose);
 };
 
 #endif
