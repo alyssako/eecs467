@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
 #include "lcmtypes/maebot_targeting_laser_command_t.hpp"
@@ -16,15 +17,21 @@
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
 #include "MovingLaser.hpp"
+
+#define testing 1
+
+using namespace std;
 //Creates and returns a LaserScan and fills its origins vector.
 LaserScan MovingLaser::findOrigin(LaserScanRange approx_scan)
 {
 	LaserScan ls;
-	
-
+    if(testing) { cout << "start time: " << approx_scan.start_pose.utime << "\nend time: " << approx_scan.end_pose.utime << "\n"; }
 	for(unsigned int i = 0; i < approx_scan.scan.times.size(); i++)
+    {
+        if(testing) { cout << "Laser scan " << i << endl; }
 		ls.origins.push_back(findOriginSingle(approx_scan.scan.times[i],
 			approx_scan.start_pose, approx_scan.end_pose));
+    }
 	
 	ls.scan = approx_scan.scan;
 	
@@ -43,6 +50,7 @@ maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_p
 	n.y = (b.y - a.y) * percent + a.y;
 	n.theta = angle_diff(a.theta, b.theta) + a.theta;
 	n.utime= t;
+    if(testing) { cout << "\tx coord: " << n.x << "\n\ty coord: " << n.y << "\n\ttheta: " << n.theta << "\n\ttime: " << n.utime << endl; }
 	return n;
 }
 
