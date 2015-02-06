@@ -21,7 +21,7 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
-#include "OccupancyGridMapper.hpp"
+//#include "OccupancyGridMapper.hpp"
 #include "MovingLaser.hpp"
 
 /* class to figure out approximately where laser scan originated from */

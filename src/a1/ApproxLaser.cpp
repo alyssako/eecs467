@@ -2,7 +2,7 @@
 #include <cassert>
 #include <iostream>
 
-LaserScanRange ApproxLaser::findPts(const maebot_laser_scan_t *scan_t)
+LaserScanRange ApproxLaser::findPts(const maebot_laser_scan_t *scan)
 {
     if(poses_.empty()){
         std::cout << "waiting for initial pose" << std::endl;
@@ -33,9 +33,9 @@ LaserScanRange ApproxLaser::findPts(const maebot_laser_scan_t *scan_t)
         }
         // assert that range of poses is correct
         assert(found);
-        assert((it-1) >= poses_.begin());
+        assert((iter-1) >= poses_.begin());
 
-        start = *(it-1);
+        start = *(iter-1);
         retval.valid = true;
         retval.start_pose = start;
         retval.end_pose = end;

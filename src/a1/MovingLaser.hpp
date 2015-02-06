@@ -18,7 +18,7 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
-#include "OccupancyGridMapper.hpp"
+//#include "OccupancyGridMapper.hpp"
 
 /* store lidar scans and associated poses where they originated */
 struct LaserScan

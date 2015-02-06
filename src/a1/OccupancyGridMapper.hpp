@@ -23,6 +23,7 @@
 
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
+#include "ApproxLaser.hpp"
 
 class OccupancyGridMapper
 {
@@ -35,9 +36,12 @@ class OccupancyGridMapper
         
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
+        
+        ApproxLaser approx_laser_;
+        MovingLaser moving_laser_;
 
     public:
-        OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid);
+        OccupancyGridMapper();
         ~OccupancyGridMapper();
 
         void setLCM(lcm::LCM *lcm_t);
@@ -50,9 +54,9 @@ class OccupancyGridMapper
         
         void addLaserScan(maebot_laser_scan_t input_scan);
         void addPose(maebot_pose_t input_pose);
-        //ApproxLaser& getApproxLaser();
-        //MovingLaser& getMovingLaser();
-        eecs467::OccupancyGrid& getOccupancyGrid();
+        ApproxLaser getApproxLaser();
+        MovingLaser getMovingLaser();
+        eecs467::OccupancyGrid getOccupancyGrid();
 };
 
 #endif

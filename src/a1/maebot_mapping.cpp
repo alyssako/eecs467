@@ -232,7 +232,8 @@ static void* send_cmds(void *data)
 
         pthread_mutex_unlock(&state->cmd_mutex);
         
-        state->lcm->publish("OCCUPANCY_GRID_GUI", &grid_mapper.occupancy_grid.toLCM());
+        auto a = state->grid_mapper.getOccupancyGrid().toLCM();
+        state->lcm->publish("OCCUPANCY_GRID_GUI", &a);
 
         usleep(1000000/Hz);
     }
@@ -363,8 +364,8 @@ int main(int argc, char **argv)
     // Video stuff?
 
     // LCM subscriptions
-    MovingLaser moving_laser(&(state->grid_mapper));
-    ApproxLaser approx_laser(&moving_laser);
+    //MovingLaser moving_laser;
+    ApproxLaser approx_laser;
 
     MaebotPoseHandler pose_handler(&approx_laser);
     MaebotLaserScanHandler laser_scan_handler(&approx_laser);

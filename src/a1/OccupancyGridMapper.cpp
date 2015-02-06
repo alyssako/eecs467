@@ -1,8 +1,8 @@
 #include "OccupancyGridMapper.hpp"
 
-OccupancyGridMapper::OccupancyGridMapper(maebot_occupancy_grid_t lcm_occupancy_grid) 
+OccupancyGridMapper::OccupancyGridMapper() :
+	occupancy_grid_(10, 10, 0.05)
 {
-    occupancy_grid_.fromLCM(lcm_occupancy_grid);
 }
 
 OccupancyGridMapper::~OccupancyGridMapper()
@@ -76,16 +76,16 @@ void OccupancyGridMapper::drawLineCells(int s_x, int s_y, int e_x, int e_y, eecs
 	drawLineCells(s_x, s_y, e_x, e_y, 1, value);
 }
 
-ApproxLaser& OccupancyGridMapper::getApproxLaser()
+ApproxLaser OccupancyGridMapper::getApproxLaser()
 {
     return approx_laser_;
 }
 
-MovingLaser& OccupancyGridMapper::getMovingLaser() {
+MovingLaser OccupancyGridMapper::getMovingLaser() {
     return moving_laser_;
 }
 
-eecs467::OccupancyGrid& OccupancyGridMapper::getOccupancyGrid() {
+eecs467::OccupancyGrid OccupancyGridMapper::getOccupancyGrid() {
     return occupancy_grid_;
 }
 

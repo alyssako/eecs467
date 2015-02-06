@@ -36,8 +36,7 @@ class MaebotPoseHandler
                            const std::string& channel,
                            const maebot_pose_t *msg)
         {   
-            if(!approx_laser->addPose(msg))
-                std::cerr << "addPose failed" << std::endl;
+            approx_laser->addPose(msg);
         }
 };
 
@@ -57,8 +56,8 @@ class MaebotLaserScanHandler
                            const std::string& channel,
                            const maebot_laser_scan_t *msg)
         {
-            if(approx_laser->findPts(msg))
-                std::cout << "findPts" << std::endl;
+        	if(approx_laser->containsPoses())
+	            approx_laser->findPts(msg);
         }
 };
 

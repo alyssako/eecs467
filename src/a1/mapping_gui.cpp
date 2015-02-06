@@ -68,6 +68,8 @@ struct state {
     pthread_mutex_t mutex;
 };
 
+eecs467::OccupancyGrid *grid;
+
 
 // === Parameter listener =================================================
 // This function is handed to the parameter gui (via a parameter listener)
@@ -164,7 +166,7 @@ animate_thread (void *data)
 			for(int x = 0; x < im->width; x++)
 			{
 				int a = 255; //alpha transparency value.
-				int v = to_grayscale(grid[x][y]) % 255;
+				int v = to_grayscale((*grid)(x, y)) % 255;
 				im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
 			}
 		}
@@ -233,7 +235,7 @@ main (int argc, char *argv[])
     eecs467_init (argc, argv);
     state_t *state = state_create ();
     
-    OccupancyGrid *grid = new OccupancyGrid;
+    grid = new eecs467::OccupancyGrid;
     OccupancyGridGuiHandler gui_handler(grid);
     state->lcm = new lcm::LCM;
     pthread_mutex_init(&state->lcm_mutex, NULL);

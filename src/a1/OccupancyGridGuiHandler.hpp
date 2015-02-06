@@ -26,11 +26,10 @@
 
 class OccupancyGridGuiHandler
 {
-    private:
-		OccupancyGrid *grid;
-		
     public:
-        OccupancyGridGuiHandler(OccupancyGrid* _grid){
+		eecs467::OccupancyGrid *grid;
+		
+        OccupancyGridGuiHandler(eecs467::OccupancyGrid* _grid){
         	grid = _grid;
         }
         
@@ -40,7 +39,7 @@ class OccupancyGridGuiHandler
                            const std::string& channel,
                            const maebot_occupancy_grid_t *msg)
         {   
-        	grid->fromLCM(msg);
+        	grid->fromLCM(*msg);
             //if(!approx_laser->addPose(msg))
             //    std::cerr << "addPose failed" << std::endl;
         }
