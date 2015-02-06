@@ -50,7 +50,7 @@ maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_p
 float MovingLaser::angle_diff(float a, float b)
 {
 	float d = b - a;
-	while(d >= 3.1415926) d -= 3.1415926;
-	while(d < -3.1415926) d += 3.1415926;
+	while(d >= 3.1415926) d -= 6.2831852;
+	while(d < -3.1415926) d += 6.2831852;
 	return d;
 }

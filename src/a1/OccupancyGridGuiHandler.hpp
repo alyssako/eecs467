@@ -40,8 +40,6 @@ class OccupancyGridGuiHandler
                            const maebot_occupancy_grid_t *msg)
         {   
         	grid->fromLCM(*msg);
-            //if(!approx_laser->addPose(msg))
-            //    std::cerr << "addPose failed" << std::endl;
         }
 };
 

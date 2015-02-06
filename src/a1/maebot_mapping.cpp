@@ -31,6 +31,7 @@
 
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
+#include "OccupancyGridMapper.hpp"
 
 #define MAX_REVERSE_SPEED -1.0f
 #define MAX_FORWARD_SPEED 1.0f

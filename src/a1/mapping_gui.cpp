@@ -145,28 +145,22 @@ animate_thread (void *data)
     const int fps = 60;
     state_t *state = (state_t*)data;
 
-    /*vector<vector<int> > grid;
-    for(int i = 0; i < 10; i++)
-    {
-	vector<int> g;
-	for(int j = 0; j < 10; j++)
-	{
-		g.push_back(rand() % 255 - 128);
-	}
-	grid.push_back(g);
-    }*/
+		cout << "Before HANDLE()" << endl;
+	//state->lcm->handle();
+		cout << "After HANDLE()" << endl;
 
     // Continue running until we are signaled otherwise. This happens
     // when the window is closed/Ctrl+C is received.
     while (state->running) 
     {
+		cout << "Animate Thread!" << endl;
 		image_u32_t *im = image_u32_create(10, 10);
 		for(int y = 0; y < im->height; y++)
 		{
 			for(int x = 0; x < im->width; x++)
 			{
 				int a = 255; //alpha transparency value.
-				int v = to_grayscale((*grid)(x, y)) % 255;
+				int v = to_grayscale(grid->logOdds(x, y)) % 255;
 				im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
 			}
 		}
@@ -189,7 +183,7 @@ animate_thread (void *data)
 state_t *
 state_create (void)
 {
-    state_t *state = (state_t*)calloc (1, sizeof(*state));
+    state_t *state = new state_t;
 
     state->vxworld = vx_world_create ();
     state->vxeh = (vx_event_handler_t*)calloc (1, sizeof(*state->vxeh));
@@ -293,17 +287,6 @@ main (int argc, char *argv[])
 
     // Initialize a parameter gui
     state->pg = pg_create ();
-    /*pg_add_double_slider (state->pg, "sl1", "Slider 1", 0, 100, 50);
-    pg_add_int_slider    (state->pg, "sl2", "Slider 2", 0, 100, 25);
-    pg_add_check_boxes (state->pg,
-                        "cb1", "Check Box 1", 0,
-                        "cb2", "Check Box 2", 1,
-                        NULL);
-    pg_add_buttons (state->pg,
-                    "but1", "Button 1",
-                    "but2", "Button 2",
-                    "but3", "Button 3",
-                    NULL);*/
 
     parameter_listener_t *my_listener = (parameter_listener_t*)calloc (1, sizeof(*my_listener));
     my_listener->impl = state;
@@ -320,7 +303,7 @@ main (int argc, char *argv[])
     state->running = 0;
     pthread_join (state->animate_thread, NULL);
     
-    while(0 == state->lcm->handle());
+    
     // Cleanup
     free (my_listener);
     state_destroy (state);
