@@ -36,13 +36,15 @@ LaserScan OccupancyGridMapper::calculateLaserOrigins()
 
     if(!approx_laser_.containsPoses())
     {
-        approx_laser_.addPose(pose);
+        approx_laser_.addPose(&pose);
         LaserScan ls;
         return ls;
     }
 
-    approx_laser_.addPose(pose);
-    LaserScan ls = approx_laser_.findPts(&laser_scan);
+    approx_laser_.addPose(&pose);
+    LaserScanRange lsr = approx_laser_.findPts(&laser_scan);
+
+    LaserScan ls = moving_laser_.findOrigin(lsr);
 
     return ls;
 }
