@@ -59,6 +59,7 @@ struct state {
 
     // threads
     pthread_t animate_thread;
+    pthread_t lcm_thread;
     
     // LCM stuff
     lcm::LCM *lcm;
@@ -135,6 +136,13 @@ static int to_grayscale(int a)
 	return a + 128;
 }
 
+void *
+lcm_handle_thread (void *data)
+{
+    state_t *state = (state_t*)data;
+    while(1) state->lcm->handle();
+}
+
 // === Your code goes here ================================================
 // The render loop handles your visualization updates. It is the function run
 // by the animate_thread. It periodically renders the contents on the
@@ -145,15 +153,11 @@ animate_thread (void *data)
     const int fps = 60;
     state_t *state = (state_t*)data;
 
-		cout << "Before HANDLE()" << endl;
-	//state->lcm->handle();
-		cout << "After HANDLE()" << endl;
-
     // Continue running until we are signaled otherwise. This happens
     // when the window is closed/Ctrl+C is received.
     while (state->running) 
     {
-		cout << "Animate Thread!" << endl;
+		//cout << "Animate Thread!" << endl;
 		image_u32_t *im = image_u32_create(10, 10);
 		for(int y = 0; y < im->height; y++)
 		{
@@ -180,13 +184,23 @@ animate_thread (void *data)
     return NULL;
 }
 
+//void * 
+//receive_lcm_msg (void *data)
+//{
+//    state_t *state = (state_t *)data;
+//
+//    while(1)
+//    
+//    return NULL;
+//}
+
 state_t *
 state_create (void)
 {
     state_t *state = new state_t;
 
     state->vxworld = vx_world_create ();
-    state->vxeh = (vx_event_handler_t*)calloc (1, sizeof(*state->vxeh));
+    state->vxeh = new vx_event_handler_t;
     state->vxeh->key_event = key_event;
     state->vxeh->mouse_event = mouse_event;
     state->vxeh->touch_event = touch_event;
@@ -288,13 +302,14 @@ main (int argc, char *argv[])
     // Initialize a parameter gui
     state->pg = pg_create ();
 
-    parameter_listener_t *my_listener = (parameter_listener_t*)calloc (1, sizeof(*my_listener));
+    parameter_listener_t *my_listener = new parameter_listener_t;
     my_listener->impl = state;
     my_listener->param_changed = my_param_changed;
     pg_add_listener (state->pg, my_listener);
 
     // Launch our worker threads
-    pthread_create (&state->animate_thread, NULL, animate_thread, state);
+    pthread_create (&state->animate_thread, NULL, animate_thread, (void*)state);
+    pthread_create (&state->lcm_thread, NULL, lcm_handle_thread, (void*)state);
 
     // This is the main loop
     eecs467_gui_run (&state->vxapp, state->pg, SCREEN_WIDTH, SCREEN_HEIGHT);
