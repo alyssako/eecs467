@@ -8,10 +8,6 @@
 #include <math.h>
 #include <string>
 
-#include "vx/vx.h"
-#include "vx/vxo_drawables.h"
-#include "vx/vx_remote_display_source.h"
-
 #include "common/getopt.h"
 #include "common/timestamp.h"
 #include "math/matd.h"
@@ -42,9 +38,6 @@
 typedef struct state state_t;
 struct state
 {
-    vx_application_t app;
-    vx_event_handler_t veh;
-
     double joy_bounds;
     double last_click[3];
 
@@ -75,91 +68,7 @@ struct state
 
 static int verbose = 0;
 
-static void display_finished(vx_application_t *app, vx_display_t *disp)
-{
-    state_t *state = (state_t *) app->impl;
-    pthread_mutex_lock(&state->layer_mutex);
-
-    vx_layer_t *layer = NULL;
-
-    zhash_remove(state->layer_map, &disp, NULL, &layer);
-
-    vx_layer_destroy(layer);
-    pthread_mutex_unlock(&state->layer_mutex);
-}
-
-static void display_started(vx_application_t *app, vx_display_t *disp)
-{
-    state_t *state = (state_t *) app->impl;
-
-    vx_layer_t *layer = vx_layer_create(state->vw);
-    vx_layer_set_display(layer, disp);
-    vx_layer_add_event_handler(layer, &state->veh);
-
-    pthread_mutex_lock(&state->layer_mutex);
-    zhash_put(state->layer_map, &disp, &layer, NULL, NULL);
-    pthread_mutex_unlock(&state->layer_mutex);
-}
-
-static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_touch_event_t * mouse)
-{
-    return 0;
-}
-
-static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_mouse_event_t * mouse)
-{
-    state_t *state = (state_t *) vh->impl;
-
-    // Button state
-    int m1 = mouse->button_mask & VX_BUTTON1_MASK;
-//    int alt = mouse->modifiers & VX_ALT_MASK;
-    int ctrl = mouse->modifiers & VX_CTRL_MASK;
-//    int shift = mouse->modifiers & VX_SHIFT_MASK;
-
-    pthread_mutex_lock(&state->cmd_mutex);
-
-    if (m1 && ctrl) {
-        // Ray cast to find click point
-        vx_ray3_t ray;
-        vx_camera_pos_compute_ray(pos, mouse->x, mouse->y, &ray);
-        vx_ray3_intersect_xy(&ray, 0.0, state->last_click);
-    } else {
-        state->last_click[0] = 0;
-        state->last_click[1] = 0;
-        state->last_click[2] = 0;
-    }
-
-    pthread_mutex_unlock(&state->cmd_mutex);
-
-    return 0;
-}
-
-static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t * key)
-{
-    return 0;
-}
-
-static void nodestroy (vx_event_handler_t * vh)
-{
-    // do nothing, since this event handler is statically allocated.
-}
-
 static state_t *global_state;
-// XXX This is not working correctly right now
-/*
-static void handler(int signum)
-{
-    switch (signum)
-    {
-        case SIGINT:
-        case SIGQUIT:
-            global_state->running = 0;
-            break;
-        default:
-            break;
-    }
-}
-*/
 
 // This thread continuously publishes command messages to the maebot
 static void* send_cmds(void *data)
@@ -242,82 +151,12 @@ static void* send_cmds(void *data)
     return NULL;
 }
 
-// This thread continously renders updates from the robot
-static void* render_loop(void *data)
-{
-    state_t *state = (state_t *) data;
-
-    int fps = 30;
-
-    // Grid
-    vx_buffer_add_back(vx_world_get_buffer(state->vw, "grid"),
-                       vxo_grid());
-    vx_buffer_swap(vx_world_get_buffer(state->vw, "grid"));
-
-    // Joystick circle
-    vx_buffer_add_back(vx_world_get_buffer(state->vw, "bounds"),
-                       vxo_chain(vxo_mat_scale(state->joy_bounds),
-                                 vxo_circle(vxo_lines_style(vx_blue, 2.0f))));
-    vx_buffer_swap(vx_world_get_buffer(state->vw, "bounds"));
-
-    while (state->running) {
-        float line[6];
-        line[0] = 0;
-        line[1] = 0;
-        line[2] = 0;
-
-        // Scale click line
-        pthread_mutex_lock(&state->cmd_mutex);
-
-        matd_t *click = matd_create_data(3, 1, state->last_click);
-        double mag = matd_vec_mag(click);
-        matd_t *n = click;
-        if (mag != 0) {
-            n = matd_vec_normalize(click);
-        }
-        double len = dmin(mag, state->joy_bounds);
-
-        line[3] = (float)len*matd_get(n, 0, 0);
-        line[4] = (float)len*matd_get(n, 1, 0);
-        line[5] = (float)len*matd_get(n, 2, 0);
-
-        if (mag != 0) {
-            matd_destroy(n);
-        }
-        matd_destroy(click);
-
-        vx_buffer_add_back(vx_world_get_buffer(state->vw, "direction"),
-                           vxo_lines(vx_resc_copyf(line, 6),
-                                     2,
-                                     GL_LINES,
-                                     vxo_lines_style(vx_red, 3.0f)));
-        vx_buffer_swap(vx_world_get_buffer(state->vw, "direction"));
-
-        pthread_mutex_unlock(&state->cmd_mutex);
-
-        usleep(1000000/fps);
-    }
-
-    return NULL;
-}
-
 int main(int argc, char **argv)
 {
-    vx_global_init();
-
     // === State initialization ============================
     state_t *state = new state_t;
     global_state = state;
     state->gopt = getopt_create();
-    state->app.display_finished = display_finished;
-    state->app.display_started = display_started;
-    state->app.impl = state;
-    state->veh.dispatch_order = -10;
-    state->veh.touch_event = touch_event;
-    state->veh.mouse_event = mouse_event;
-    state->veh.key_event = key_event;
-    state->veh.destroy = nodestroy;
-    state->veh.impl = state;
     state->last_click[0] = 0;
     state->last_click[1] = 0;
     state->last_click[2] = 0;
@@ -325,13 +164,10 @@ int main(int argc, char **argv)
 
     state->running = 1;
     state->lcm = new lcm::LCM;
-    state->vw = vx_world_create();
     pthread_mutex_init(&state->layer_mutex, NULL);
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lcm_mutex, NULL);
     pthread_mutex_init(&state->render_mutex, NULL);
-
-    state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
 
     state->grid_mapper.setLCM(state->lcm);
     // === End =============================================
@@ -354,14 +190,6 @@ int main(int argc, char **argv)
     // Set up display
     verbose = getopt_get_bool(state->gopt, "verbose");
 
-    vx_remote_display_source_attr_t remote_attr;
-    vx_remote_display_source_attr_init(&remote_attr);
-    remote_attr.max_bandwidth_KBs = getopt_get_int(state->gopt, "limitKBs");
-    remote_attr.advertise_name = (char *)"Maebot Teleop";
-    remote_attr.connection_port = getopt_get_int(state->gopt, "port");
-
-    vx_remote_display_source_t *remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
-
     // Video stuff?
 
     // LCM subscriptions
@@ -381,9 +209,7 @@ int main(int argc, char **argv)
 
     // Spin up thread(s)
     pthread_create(&state->cmd_thread, NULL, send_cmds, state);
-    pthread_create(&state->render_thread, NULL, render_loop, state);
 
     // Loop forever
     while(state->lcm->handle() == 0);
-    vx_remote_display_source_destroy(remote);
 }
