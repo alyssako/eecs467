@@ -57,19 +57,19 @@ struct state {
     vx_event_handler_t *vxeh; // for getting mouse, key, and touch events
     vx_mouse_event_t    last_mouse_event;
 
-    // threads
+    // threads stuff
     pthread_t animate_thread;
     
     // LCM stuff
     lcm::LCM *lcm;
     pthread_mutex_t lcm_mutex;
 
-    // for accessing the arrays
+    // for accessing the arrays stuff
     pthread_mutex_t mutex;
+
+    // occupancy grid stuff
+    eecs467::OccupancyGrid grid;
 };
-
-eecs467::OccupancyGrid *grid;
-
 
 // === Parameter listener =================================================
 // This function is handed to the parameter gui (via a parameter listener)
@@ -160,7 +160,7 @@ animate_thread (void *data)
 			for(int x = 0; x < im->width; x++)
 			{
 				int a = 255; //alpha transparency value.
-				int v = to_grayscale(grid->logOdds(x, y)) % 255;
+				int v = to_grayscale(state->grid.logOdds(x, y)) % 255;
 				im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
 			}
 		}
@@ -229,8 +229,7 @@ main (int argc, char *argv[])
     eecs467_init (argc, argv);
     state_t *state = state_create ();
     
-    grid = new eecs467::OccupancyGrid;
-    OccupancyGridGuiHandler gui_handler(grid);
+    OccupancyGridGuiHandler gui_handler(&state->grid);
     state->lcm = new lcm::LCM;
     pthread_mutex_init(&state->lcm_mutex, NULL);
     state->lcm->subscribe("OCCUPANCY_GRID_GUI",
