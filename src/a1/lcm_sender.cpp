@@ -19,10 +19,12 @@ int main(){
     if(!lcm.good())
         return 1;
 
+	srand (time(NULL));
+	
     eecs467::OccupancyGrid og(10, 10, 0.05);
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < (int)og.widthInCells(); i++)
     {
-        for(int j = 0; j < 10; j++)
+        for(int j = 0; j < (int)og.heightInCells(); j++)
         {
             og(i, j) = rand() % 255 - 128;
         }

@@ -34,6 +34,8 @@ class OccupancyGridMapper
         std::queue<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
         
+        pthread_cond_t cv_;
+        pthread_mutex_t mapper_mutex_; // lock used with cv to wait until poses_ and laser_scans_ are both nonempty
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
         
@@ -45,8 +47,10 @@ class OccupancyGridMapper
         ~OccupancyGridMapper();
 
         void setLCM(lcm::LCM *lcm_t);
-        void calculateLaserOrigins();
-        void updateGrid();
+        LaserScan calculateLaserOrigins();
+        void updateGrid(LaserScan scan);
+        void publishOccupancyGrid();
+        
         void drawLineMeters(double, double, double, double, const double, eecs467::CellOdds);
         void drawLineMeters(double, double, double, double, eecs467::CellOdds);
         void drawLineCells(int, int, int, int, const double, eecs467::CellOdds);
@@ -57,6 +61,16 @@ class OccupancyGridMapper
         ApproxLaser getApproxLaser();
         MovingLaser getMovingLaser();
         eecs467::OccupancyGrid getOccupancyGrid();
+
+        bool laserScansEmpty();
+        bool posesEmpty();
+
+        void lockPosesMutex();
+        void unlockPosesMutex();
+        void lockLaserScansMutex();
+        void unlockLaserScansMutex();
+        void wait();
+        void signal();
 };
 
 #endif

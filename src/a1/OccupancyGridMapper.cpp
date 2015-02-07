@@ -1,4 +1,5 @@
 #include "OccupancyGridMapper.hpp"
+#include <iostream>
 
 OccupancyGridMapper::OccupancyGridMapper() :
 	occupancy_grid_(10, 10, 0.05)
@@ -13,12 +14,29 @@ void OccupancyGridMapper::setLCM(lcm::LCM *lcm_t){
     lcm = lcm_t;
 }
 
-void OccupancyGridMapper::calculateLaserOrigins()
+LaserScan OccupancyGridMapper::calculateLaserOrigins()
 {
+    LaserScan ls;
+    return ls;
 }
 
-void OccupancyGridMapper::updateGrid()
+void OccupancyGridMapper::updateGrid(LaserScan scan)
 {
+    srand (time(NULL));
+    for(uint i = 0; i < occupancy_grid_.widthInCells(); ++i)
+    {
+        for(uint j = 0; j < occupancy_grid_.heightInCells(); ++j)
+        {
+            occupancy_grid_(i, j) = rand() % 255 - 128;
+        }
+    }
+}
+
+void OccupancyGridMapper::publishOccupancyGrid()
+{
+    maebot_occupancy_grid_t data = occupancy_grid_.toLCM();
+    lcm->publish("OCCUPANCY_GRID_GUI", &data);
+    std::cout << "sent\n";
 }
 
 /*
@@ -89,16 +107,52 @@ eecs467::OccupancyGrid OccupancyGridMapper::getOccupancyGrid() {
     return occupancy_grid_;
 }
 
-void OccupancyGridMapper::addLaserScan(maebot_laser_scan_t input_scan)
+bool OccupancyGridMapper::laserScansEmpty()
+{
+    return laser_scans_.empty();
+}
+
+bool OccupancyGridMapper::posesEmpty()
+{
+    return poses_.empty();
+}
+
+void OccupancyGridMapper::lockLaserScansMutex()
 {
     pthread_mutex_lock(&laser_scans_mutex_);
-    laser_scans_.push(input_scan);
+}
+
+void OccupancyGridMapper::unlockLaserScansMutex()
+{
     pthread_mutex_unlock(&laser_scans_mutex_);
+}
+
+void OccupancyGridMapper::lockPosesMutex()
+{
+    pthread_mutex_lock(&poses_mutex_);
+}
+
+void OccupancyGridMapper::unlockPosesMutex()
+{
+    pthread_mutex_unlock(&poses_mutex_);
+}
+
+void OccupancyGridMapper::wait()
+{
+    pthread_cond_wait(&cv_, &mapper_mutex_);
+}
+
+void OccupancyGridMapper::signal()
+{
+    pthread_cond_signal(&cv_);
+}
+
+void OccupancyGridMapper::addLaserScan(maebot_laser_scan_t input_scan)
+{
+    laser_scans_.push(input_scan);
 }
 
 void OccupancyGridMapper::addPose(maebot_pose_t input_pose)
 {
-    pthread_mutex_lock(&poses_mutex_);
     poses_.push(input_pose);
-    pthread_mutex_unlock(&poses_mutex_);
 }

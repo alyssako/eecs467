@@ -16,6 +16,10 @@
 #include "imagesource/image_source.h"
 #include "imagesource/image_convert.h"
 
+#include "vx/vx.h"
+#include "vx/vxo_drawables.h"
+#include "vx/vx_remote_display_source.h"
+
 #include "maebot_handlers.hpp"
 #include "lcmtypes/maebot_motor_command_t.hpp"
 #include "lcmtypes/maebot_targeting_laser_command_t.hpp"
@@ -45,7 +49,9 @@ struct state
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
     pthread_mutex_t render_mutex;
-    pthread_t lcm_thread;
+//    pthread_t lcm_thread;
+    pthread_t render_thread;
+    pthread_t update_map_thread;
 
 
     int running;
@@ -67,14 +73,14 @@ static int verbose = 0;
 
 static state_t *global_state;
 
-static void * receive_lcm(void *data) 
-{
-    state_t *state = (state_t *)data; 
-    
-    while(1)
-        state->lcm->handle();
-    return NULL;
-}
+//static void * receive_lcm(void *data) 
+//{
+//    state_t *state = (state_t *)data; 
+//    
+//    while(1)
+//        state->lcm->handle();
+//    return NULL;
+//}
 
 // This thread continuously publishes command messages to the maebot
 static void* send_cmds(void *data)
@@ -157,6 +163,24 @@ static void* send_cmds(void *data)
     return NULL;
 }
 
+static void* update_map(void *data)
+{
+    state_t *state = (state_t*) data;
+
+    while(state->running)
+    {
+        while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())
+        {
+            state->grid_mapper.wait();
+        }
+
+        LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
+        state->grid_mapper.updateGrid(updated_scan);
+        state->grid_mapper.publishOccupancyGrid();
+    }
+    return NULL;
+}
+
 int main(int argc, char **argv)
 {
     // === State initialization ============================
@@ -196,14 +220,9 @@ int main(int argc, char **argv)
     // Set up display
     verbose = getopt_get_bool(state->gopt, "verbose");
 
-    // Video stuff?
-
     // LCM subscriptions
-    //MovingLaser moving_laser;
-    ApproxLaser approx_laser;
-
-    MaebotPoseHandler pose_handler(&approx_laser);
-    MaebotLaserScanHandler laser_scan_handler(&approx_laser);
+    MaebotPoseHandler pose_handler(&state->grid_mapper);
+    MaebotLaserScanHandler laser_scan_handler(&state->grid_mapper);
 
     state->lcm->subscribe("MAEBOT_POSE",
                           &MaebotPoseHandler::handleMessage,
@@ -215,11 +234,14 @@ int main(int argc, char **argv)
 
     // Spin up thread(s)
     pthread_create(&state->cmd_thread, NULL, send_cmds, (void*)state);
-    pthread_create(&state->lcm_thread, NULL, receive_lcm, (void*)state);
-    // Loop forever
+//    pthread_create(&state->lcm_thread, NULL, receive_lcm, (void*)state);
+    pthread_create(&state->update_map_thread, NULL, update_map, state);
 
-    pthread_join (state->lcm_thread, NULL);
-    pthread_join (state->cmd_thread, NULL);
+    // Loop forever
+    while(state->lcm->handle() == 0);
+
+//    pthread_join (state->lcm_thread, NULL);
+//    pthread_join (state->cmd_thread, NULL);
 
     return 0;
 }

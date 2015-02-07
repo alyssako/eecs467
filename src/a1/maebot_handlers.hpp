@@ -19,36 +19,41 @@
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
 #include "ApproxLaser.hpp"
+#include "OccupancyGridMapper.hpp"
 
 class MaebotPoseHandler
 {
     private:
-        ApproxLaser *approx_laser;
+        OccupancyGridMapper *grid_mapper_;
 
     public:
-        MaebotPoseHandler(ApproxLaser *approx_laser_t){
-            approx_laser = approx_laser_t;
-        }
+        MaebotPoseHandler(OccupancyGridMapper *grid_mapper_t) :
+            grid_mapper_(grid_mapper_t) { }
         
         ~MaebotPoseHandler(){}
 
         void handleMessage(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
                            const maebot_pose_t *msg)
-        {   
-            approx_laser->addPose(msg);
+        {
+            grid_mapper_->lockPosesMutex();
+            grid_mapper_->addPose(*msg);
+            if(!grid_mapper_->laserScansEmpty())
+            {
+                grid_mapper_->signal();
+            }
+            grid_mapper_->unlockPosesMutex();
         }
 };
 
 class MaebotLaserScanHandler
 {
     private:
-        ApproxLaser *approx_laser;
+        OccupancyGridMapper *grid_mapper_;
 
     public:
-        MaebotLaserScanHandler(ApproxLaser* approx_laser_t){
-            approx_laser = approx_laser_t;
-        }
+        MaebotLaserScanHandler(OccupancyGridMapper *grid_mapper_t) :
+            grid_mapper_(grid_mapper_t) { }
 
         ~MaebotLaserScanHandler(){}
 
@@ -56,8 +61,13 @@ class MaebotLaserScanHandler
                            const std::string& channel,
                            const maebot_laser_scan_t *msg)
         {
-        	if(approx_laser->containsPoses())
-	            approx_laser->findPts(msg);
+            grid_mapper_->lockLaserScansMutex();
+            grid_mapper_->addLaserScan(*msg);
+            if(!grid_mapper_->posesEmpty())
+            {
+                grid_mapper_->signal();
+            }
+            grid_mapper_->unlockLaserScansMutex();
         }
 };
 

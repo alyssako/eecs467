@@ -33,8 +33,8 @@
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridGuiHandler.hpp"
 
-#define SCREEN_WIDTH 100
-#define SCREEN_HEIGHT 100
+#define SCREEN_WIDTH 500
+#define SCREEN_HEIGHT 500
 
 using namespace std;
 
@@ -158,7 +158,7 @@ animate_thread (void *data)
     while (state->running) 
     {
 		//cout << "Animate Thread!" << endl;
-		image_u32_t *im = image_u32_create(10, 10);
+		image_u32_t *im = image_u32_create(state->grid.widthInCells(), state->grid.heightInCells());
 		for(int y = 0; y < im->height; y++)
 		{
 			for(int x = 0; x < im->width; x++)
