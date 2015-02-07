@@ -45,7 +45,7 @@ struct state
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
     pthread_mutex_t render_mutex;
-    pthread_t render_thread;
+    pthread_t lcm_thread;
 
 
     int running;
@@ -60,15 +60,21 @@ struct state
 
     pthread_mutex_t layer_mutex;
 
-    vx_world_t *vw;
-    zhash_t *layer_map; // <display, layer>
-
     OccupancyGridMapper grid_mapper;
 };
 
 static int verbose = 0;
 
 static state_t *global_state;
+
+static void * receive_lcm(void *data) 
+{
+    state_t *state = (state_t *)data; 
+    
+    while(1)
+        state->lcm->handle();
+    return NULL;
+}
 
 // This thread continuously publishes command messages to the maebot
 static void* send_cmds(void *data)
@@ -208,8 +214,12 @@ int main(int argc, char **argv)
     std::cout << "listening" << std::endl;
 
     // Spin up thread(s)
-    pthread_create(&state->cmd_thread, NULL, send_cmds, state);
-
+    pthread_create(&state->cmd_thread, NULL, send_cmds, (void*)state);
+    pthread_create(&state->lcm_thread, NULL, receive_lcm, (void*)state);
     // Loop forever
-    while(state->lcm->handle() == 0);
+
+    pthread_join (state->lcm_thread, NULL);
+    pthread_join (state->cmd_thread, NULL);
+
+    return 0;
 }
