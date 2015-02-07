@@ -158,7 +158,7 @@ animate_thread (void *data)
     while (state->running) 
     {
 		//cout << "Animate Thread!" << endl;
-		image_u32_t *im = image_u32_create(10, 10);
+		image_u32_t *im = image_u32_create(grid->widthInCells(), grid->heightInCells());
 		for(int y = 0; y < im->height; y++)
 		{
 			for(int x = 0; x < im->width; x++)

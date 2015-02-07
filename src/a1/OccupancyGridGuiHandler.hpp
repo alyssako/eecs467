@@ -40,6 +40,8 @@ class OccupancyGridGuiHandler
                            const maebot_occupancy_grid_t *msg)
         {   
             std::cout << "gui received grid" << std::endl;
+            
+            //grid->reset();
             grid->fromLCM(*msg);
         }
 };
