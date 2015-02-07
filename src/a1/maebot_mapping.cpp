@@ -16,6 +16,10 @@
 #include "imagesource/image_source.h"
 #include "imagesource/image_convert.h"
 
+#include "vx/vx.h"
+#include "vx/vxo_drawables.h"
+#include "vx/vx_remote_display_source.h"
+
 #include "maebot_handlers.hpp"
 #include "lcmtypes/maebot_motor_command_t.hpp"
 #include "lcmtypes/maebot_targeting_laser_command_t.hpp"
