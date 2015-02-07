@@ -50,6 +50,7 @@ struct state
     pthread_t cmd_thread;
     pthread_mutex_t render_mutex;
     pthread_t render_thread;
+    pthread_t update_map_thread;
 
 
     int running;
@@ -155,6 +156,24 @@ static void* send_cmds(void *data)
     return NULL;
 }
 
+static void* update_map(void *data)
+{
+    state_t *state = (state_t*) data;
+
+    while(state->running)
+    {
+        while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())
+        {
+            state->grid_mapper.wait();
+        }
+
+        LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
+        state->grid_mapper.updateGrid(updated_scan);
+        state->grid_mapper.publishGrid();
+    }
+    return NULL;
+}
+
 int main(int argc, char **argv)
 {
     // === State initialization ============================
@@ -194,13 +213,11 @@ int main(int argc, char **argv)
     // Set up display
     verbose = getopt_get_bool(state->gopt, "verbose");
 
-    // Video stuff?
-
     // LCM subscriptions
-    //MovingLaser moving_laser;
+    MovingLaser moving_laser;
     ApproxLaser approx_laser;
 
-    MaebotPoseHandler pose_handler(&approx_laser);
+    MaebotPoseHandler pose_handler(&approx_laser, &state->grid_mapper);
     MaebotLaserScanHandler laser_scan_handler(&approx_laser);
 
     state->lcm->subscribe("MAEBOT_POSE",
@@ -213,6 +230,7 @@ int main(int argc, char **argv)
 
     // Spin up thread(s)
     pthread_create(&state->cmd_thread, NULL, send_cmds, state);
+    pthread_create(&state->update_map_thread, NULL, update_map, state);
 
     // Loop forever
     while(state->lcm->handle() == 0);
