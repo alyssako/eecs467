@@ -35,7 +35,7 @@ class OccupancyGridMapper
         pthread_mutex_t poses_mutex_;
         
         pthread_cond_t cv_;
-        ptrhead_mutex_t mapper_mutex_; // lock used with cv to wait until poses_ and laser_scans_ are both nonempty
+        pthread_mutex_t mapper_mutex_; // lock used with cv to wait until poses_ and laser_scans_ are both nonempty
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
         

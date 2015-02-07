@@ -19,16 +19,15 @@
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
 #include "ApproxLaser.hpp"
+#include "OccupancyGridMapper.hpp"
 
 class MaebotPoseHandler
 {
     private:
-        ApproxLaser *approx_laser_;
         OccupancyGridMapper *grid_mapper_;
 
     public:
-        MaebotPoseHandler(ApproxLaser *approx_laser_t, OccupancyGridMapper *grid_mapper_t) :
-            approx_laser_(approx_laser_t),
+        MaebotPoseHandler(OccupancyGridMapper *grid_mapper_t) :
             grid_mapper_(grid_mapper_t) { }
         
         ~MaebotPoseHandler(){}
@@ -50,12 +49,10 @@ class MaebotPoseHandler
 class MaebotLaserScanHandler
 {
     private:
-        ApproxLaser *approx_laser_;
         OccupancyGridMapper *grid_mapper_;
 
     public:
-        MaebotLaserScanHandler(ApproxLaser* approx_laser_t, OccupancyGridMapper *grid_mapper_t)
-            approx_laser_(approx_laser_t),
+        MaebotLaserScanHandler(OccupancyGridMapper *grid_mapper_t) :
             grid_mapper_(grid_mapper_t) { }
 
         ~MaebotLaserScanHandler(){}

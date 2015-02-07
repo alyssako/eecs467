@@ -47,10 +47,9 @@ LaserScan OccupancyGridMapper::calculateLaserOrigins()
     return ls;
 }
 
-void OccupancyGridMapper::updateGrid()
+void OccupancyGridMapper::updateGrid(LaserScan scan)
 {
-
-    srnd (time(NULL));
+    srand (time(NULL));
     for(uint i = 0; i < occupancy_grid_.widthInCells(); ++i)
     {
         for(uint j = 0; j < occupancy_grid_.heightInCells(); ++j)
@@ -155,12 +154,12 @@ void OccupancyGridMapper::unlockLaserScansMutex()
     pthread_mutex_unlock(&laser_scans_mutex_);
 }
 
-void OccupancyGridMapper::lockLaserScansMutex()
+void OccupancyGridMapper::lockPosesMutex()
 {
     pthread_mutex_lock(&poses_mutex_);
 }
 
-void OccupancyGridMapper::unlockLaserScansMutex()
+void OccupancyGridMapper::unlockPosesMutex()
 {
     pthread_mutex_unlock(&poses_mutex_);
 }
