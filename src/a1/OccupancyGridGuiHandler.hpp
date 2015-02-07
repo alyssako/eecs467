@@ -41,7 +41,7 @@ class OccupancyGridGuiHandler
         {   
             std::cout << "gui received grid" << std::endl;
             
-            //grid->reset();
+            grid->reset();
             grid->fromLCM(*msg);
         }
 };
