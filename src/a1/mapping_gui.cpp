@@ -29,6 +29,7 @@
 
 #include "eecs467_util.h"    // This is where a lot of the internals live
 
+#include "state.hpp"
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridGuiHandler.hpp"
@@ -110,6 +111,7 @@ lcm_handle_thread (void *data)
 {
     state_t *state = (state_t*)data;
     while(1) state->lcm->handle();
+    return NULL;
 }
 
 // === Your code goes here ================================================
@@ -184,6 +186,7 @@ state_create (void)
     state->vxapp.impl = eecs467_default_implementation_create (state->vxworld, state->vxeh);
 
     state->running = 1;
+    state->location_count = 0;
 
     return state;
 }
@@ -216,7 +219,7 @@ main (int argc, char *argv[])
     state_t *state = state_create ();
 
     OccupancyGridGuiHandler gui_handler(&state->grid);
-    LocationHandler location_handler();
+    LocationHandler location_handler(state);
 
     state->lcm = new lcm::LCM;
     pthread_mutex_init(&state->lcm_mutex, NULL);
