@@ -39,45 +39,14 @@
 using namespace std;
 
 // It's good form for every application to keep its state in a struct.
-typedef struct state state_t;
-struct state {
-    bool running;
-
-    getopt_t        *gopt;
-    parameter_gui_t *pg;
-
-    // image stuff
-    char *img_url;
-    int   img_height;
-    int   img_width;
-
-    // vx stuff
-    vx_application_t    vxapp;
-    vx_world_t         *vxworld;      // where vx objects are live
-    vx_event_handler_t *vxeh; // for getting mouse, key, and touch events
-    vx_mouse_event_t    last_mouse_event;
-
-    // threads stuff
-    pthread_t animate_thread;
-    pthread_t lcm_thread;
-    
-    // LCM stuff
-    lcm::LCM *lcm;
-    pthread_mutex_t lcm_mutex;
-
-    // for accessing the arrays stuff
-    pthread_mutex_t mutex;
-
-    // occupancy grid stuff
-    eecs467::OccupancyGrid grid;
-};
+// Moved to OccupancyGridHandler.hpp 
 
 // === Parameter listener =================================================
 // This function is handed to the parameter gui (via a parameter listener)
 // and handles events coming from the parameter gui. The parameter listener
 // also holds a void* pointer to "impl", which can point to a struct holding
 // state, etc if need be.
-static void
+    static void
 my_param_changed (parameter_listener_t *pl, parameter_gui_t *pg, const char *name)
 {
     if (0==strcmp ("sl1", name))
@@ -90,7 +59,7 @@ my_param_changed (parameter_listener_t *pl, parameter_gui_t *pg, const char *nam
         printf ("%s changed\n", name);
 }
 
-static int
+    static int
 mouse_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_mouse_event_t *mouse)
 {
     state_t *state = (state_t*)vxeh->impl;
@@ -99,7 +68,7 @@ mouse_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_
     // vx_mouse_event_t contains scroll, x/y, and button click events
 
     if ((mouse->button_mask & VX_BUTTON1_MASK) &&
-        !(state->last_mouse_event.button_mask & VX_BUTTON1_MASK)) {
+            !(state->last_mouse_event.button_mask & VX_BUTTON1_MASK)) {
 
         vx_ray3_t ray;
         vx_camera_pos_compute_ray (pos, mouse->x, mouse->y, &ray);
@@ -117,14 +86,14 @@ mouse_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_
     return 0;
 }
 
-static int
+    static int
 key_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_key_event_t *key)
 {
     //state_t *state = vxeh->impl;
     return 0;
 }
 
-static int
+    static int
 touch_event (vx_event_handler_t *vh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_touch_event_t *mouse)
 {
     return 0; // Does nothing
@@ -133,10 +102,10 @@ touch_event (vx_event_handler_t *vh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_to
 //Converts logodds [-128, 127] to a grayscale vaue [0, 255]
 static int to_grayscale(int a)
 {
-	return a + 128;
+    return a + 128;
 }
 
-void *
+    void *
 lcm_handle_thread (void *data)
 {
     state_t *state = (state_t*)data;
@@ -147,7 +116,7 @@ lcm_handle_thread (void *data)
 // The render loop handles your visualization updates. It is the function run
 // by the animate_thread. It periodically renders the contents on the
 // vx world contained by state
-void *
+    void *
 animate_thread (void *data)
 {
     const int fps = 60;
@@ -157,28 +126,31 @@ animate_thread (void *data)
     // when the window is closed/Ctrl+C is received.
     while (state->running) 
     {
-		//cout << "Animate Thread!" << endl;
-		image_u32_t *im = image_u32_create(state->grid.widthInCells(), state->grid.heightInCells());
-		for(int y = 0; y < im->height; y++)
-		{
-			for(int x = 0; x < im->width; x++)
-			{
-				int a = 255; //alpha transparency value.
-				int v = to_grayscale(state->grid.logOdds(x, y)) % 255;
-				im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
-			}
-		}
-		vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
-		const double scale = 1./im->width;
-		                vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
-		                                    vxo_chain (vxo_mat_scale3 (scale, scale, 1.0),
-		                                               vxo_mat_translate3 (-im->width/2., -im->height/2., 0.),
-		                                               vo));
-		vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
-		image_u32_destroy (im);
-		vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
+        //cout << "Animate Thread!" << endl;
+        image_u32_t *im = image_u32_create(state->grid.widthInCells(), state->grid.heightInCells());
+        for(int y = 0; y < im->height; y++)
+        {
+            for(int x = 0; x < im->width; x++)
+            {
+                int a = 255; //alpha transparency value.
+                int v = to_grayscale(state->grid.logOdds(x, y)) % 255;
+                im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
+            }
+        }
+        vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
+        const double scale = 1./im->width;
 
-		usleep (1000000/fps);
+        pthread_mutex_lock(&state->gui_mutex);
+        vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
+                            vxo_chain (vxo_mat_scale3 (scale, scale, 1.0),
+                            vxo_mat_translate3 (-im->width/2., -im->height/2., 0.),
+                            vo));
+        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
+        image_u32_destroy (im);
+        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
+        pthread_mutex_unlock(&state->gui_mutex);
+
+        usleep (1000000/fps);
     }
 
     return NULL;
@@ -194,7 +166,7 @@ animate_thread (void *data)
 //    return NULL;
 //}
 
-state_t *
+    state_t *
 state_create (void)
 {
     state_t *state = new state_t;
@@ -216,7 +188,7 @@ state_create (void)
     return state;
 }
 
-void
+    void
 state_destroy (state_t *state)
 {
     if (!state)
@@ -237,18 +209,24 @@ state_destroy (state_t *state)
 // This is intended to give you a starting point to work with for any program
 // requiring a GUI. This handles all of the GTK and vx setup, allowing you to
 // fill in the functionality with your own code.
-int
+    int
 main (int argc, char *argv[])
 {
     eecs467_init (argc, argv);
     state_t *state = state_create ();
-    
+
     OccupancyGridGuiHandler gui_handler(&state->grid);
+    LocationHandler location_handler();
+
     state->lcm = new lcm::LCM;
     pthread_mutex_init(&state->lcm_mutex, NULL);
+
     state->lcm->subscribe("OCCUPANCY_GRID_GUI",
-                          &OccupancyGridGuiHandler::handleMessage,
-                          &gui_handler);
+            &OccupancyGridGuiHandler::handleMessage,
+            &gui_handler);
+    state->lcm->subscribe("MAEBOT_POSE", 
+            &LocationHandler::handlePose,
+            &location_handler);
 
     // Parse arguments from the command line, showing the help
     // screen if required
@@ -316,8 +294,8 @@ main (int argc, char *argv[])
     // Quit when GTK closes
     state->running = 0;
     pthread_join (state->animate_thread, NULL);
-    
-    
+
+
     // Cleanup
     free (my_listener);
     state_destroy (state);

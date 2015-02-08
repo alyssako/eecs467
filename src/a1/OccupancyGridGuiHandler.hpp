@@ -23,6 +23,41 @@
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 
+typedef struct state state_t;
+struct state {
+    bool running;
+
+    getopt_t        *gopt;
+    parameter_gui_t *pg;
+
+    // image stuff
+    char *img_url;
+    int   img_height;
+    int   img_width;
+
+    // vx stuff
+    vx_application_t    vxapp;
+    vx_world_t         *vxworld;      // where vx objects are live
+    vx_event_handler_t *vxeh; // for getting mouse, key, and touch events
+    vx_mouse_event_t    last_mouse_event;
+    pthread_mutex_t gui_mutex;
+
+    // threads stuff
+    pthread_t animate_thread;
+    pthread_t lcm_thread;
+
+    // LCM stuff
+    lcm::LCM *lcm;
+    pthread_mutex_t lcm_mutex;
+
+    // for accessing the arrays stuff
+    pthread_mutex_t mutex;
+
+    // occupancy grid stuff
+    eecs467::OccupancyGrid grid;
+
+    location_count = 0;
+};
 
 class OccupancyGridGuiHandler
 {
@@ -45,5 +80,32 @@ class OccupancyGridGuiHandler
             grid->fromLCM(*msg);
         }
 };
+
+class LocationHandler
+{
+    punlic:
+        state_t *state;  
+    
+        LocationHandler(){}
+
+        ~LocationHandler(){}
+
+        void handlePose(const lcm::ReceiveBuffer *rbuf,
+                        const std::string& channel,
+                        const maebot_pose_t *msg)
+        {        
+            float point[3] = {msg->x, msg->y, 0.0f};
+
+            char buff_name[30];
+            sprintf(buff_name, "location-buff-%d", state->location_count++);
+
+            pthread_mutex_lock(&state->gui_mutex);
+            vx_buffer_t *buff = vx_world_get_buffer (state->vxworld, buff_name);
+            vx_resc_t *verts = vx_resc_copyf(point, 3);
+            vx_buffer_add_back(buff, vxo_points(verts, 1, vxo_points_style(vx_red, 2.0f)));
+            vx_buffer_swap (buff);
+            pthread_mutex_unlock(&state->gui_mutex);
+        }
+}
 
 #endif
