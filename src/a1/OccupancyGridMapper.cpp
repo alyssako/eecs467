@@ -16,7 +16,36 @@ void OccupancyGridMapper::setLCM(lcm::LCM *lcm_t){
 
 LaserScan OccupancyGridMapper::calculateLaserOrigins()
 {
-    LaserScan ls;
+    pthread_mutex_lock(&mapper_mutex_);
+    if(laser_scans_.empty() || poses_.empty())
+    {
+        wait();
+    }
+    pthread_mutex_unlock(&mapper_mutex_);
+
+    pthread_mutex_lock(&laser_scans_mutex_);
+    pthread_mutex_lock(&poses_mutex_);
+
+    maebot_pose_t pose = poses_.front();
+    poses_.pop();
+    maebot_laser_scan_t laser_scan = laser_scans_.front();
+    laser_scans_.pop();
+
+    pthread_mutex_unlock(&laser_scans_mutex_);
+    pthread_mutex_unlock(&poses_mutex_);
+
+    if(!approx_laser_.containsPoses())
+    {
+        approx_laser_.addPose(&pose);
+        LaserScan ls;
+        return ls;
+    }
+
+    approx_laser_.addPose(&pose);
+    LaserScanRange lsr = approx_laser_.findPts(&laser_scan);
+
+    LaserScan ls = moving_laser_.findOrigin(lsr);
+
     return ls;
 }
 
