@@ -33,9 +33,12 @@ class OccupancyGridMapper
         
         std::queue<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
-        
+
+        std::queue<maebot_motor_feedback_t> motor_feedbacks_;
+        pthread_mutex_t motor_feedback_mutex_;
+
         pthread_cond_t cv_;
-        pthread_mutex_t mapper_mutex_; // lock used with cv to wait until poses_ and laser_scans_ are both nonempty
+        pthread_mutex_t mapper_mutex_; // lock used with cv to wait until poses_/motor_feedbacks_ and laser_scans_ are both nonempty
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
         

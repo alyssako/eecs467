@@ -227,6 +227,7 @@ int main(int argc, char **argv)
     state->lcm->subscribe("MAEBOT_POSE",
                           &MaebotPoseHandler::handleMessage,
                           &pose_handler);
+    // odometry
     state->lcm->subscribe("MAEBOT_LASER_SCAN",
                           &MaebotLaserScanHandler::handleMessage,
                           &laser_scan_handler);

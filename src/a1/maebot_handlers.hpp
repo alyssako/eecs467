@@ -71,4 +71,29 @@ class MaebotLaserScanHandler
         }
 };
 
+class MaebotMotorFeedbackHandler
+{
+    private:
+        OccupancyGridMapper *grid_mapper_;
+
+    public:
+        MaebotMotorFeedbackHandler(OccupancyGridMapper *grid_mapper_t) :
+            grid_mapper_(grid_mapper_t) { }
+        
+        ~MaebotMotorFeedbackHandler(){}
+
+        void handleMessage(const lcm::ReceiveBuffer *rbuf,
+                           const std::string& channel,
+                           const maebot_motor_feedback_t *msg)
+        {
+            grid_mapper_->lockMotorFeedbackMutex();
+            grid_mapper_->addMotorFeedback(*msg);
+            if(!grid_mapper_->laserScansEmpty())
+            {
+                grid_mapper_->signal();
+            }
+            grid_mapper_->unlockMotorFeedbackMutex();
+        }
+};
+
 #endif
