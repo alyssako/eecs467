@@ -35,6 +35,7 @@ LaserScan MovingLaser::findOrigin(LaserScanRange approx_scan)
 	
 	ls.scan = approx_scan.scan;
     ls.valid = true;
+    ls.end_pose = approx_scan.end_pose;
 	
 	return ls;
 }

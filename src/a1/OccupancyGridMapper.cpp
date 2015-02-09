@@ -68,10 +68,11 @@ void OccupancyGridMapper::updateGrid(LaserScan scan)
     }
 }
 
-void OccupancyGridMapper::publishOccupancyGrid()
+void OccupancyGridMapper::publishOccupancyGrid(maebot_pose_t pose)
 {
     maebot_occupancy_grid_t data = occupancy_grid_.toLCM();
     lcm->publish("OCCUPANCY_GRID_GUI", &data);
+    lcm->publish("MAEBOT_POSE_GUI", &pose);
     std::cout << "sent\n";
 }
 

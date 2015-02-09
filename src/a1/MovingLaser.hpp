@@ -28,6 +28,7 @@ struct LaserScan
     bool valid;
     std::vector<maebot_pose_t> origins;
     maebot_laser_scan_t scan;
+    maebot_pose_t end_pose;
 };
 
 /* store the lidar scan and the two poses it originated between */

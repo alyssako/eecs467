@@ -180,7 +180,7 @@ static void* update_map(void *data)
         LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
         if(!updated_scan.valid) { continue; }
         state->grid_mapper.updateGrid(updated_scan);
-        state->grid_mapper.publishOccupancyGrid();
+        state->grid_mapper.publishOccupancyGrid(updated_scan.end_pose);
     }
     return NULL;
 }

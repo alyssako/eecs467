@@ -142,13 +142,30 @@ animate_thread (void *data)
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
         const double scale = 1./im->width;
 
+        auto mat_scale = vxo_mat_scale3(scale, scale, 1.0);
+        vxo_mat_translate3(-im->width/2., -im->height/2., 0.);
+
         pthread_mutex_lock(&state->gui_mutex);
         vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
-                            vxo_chain (vxo_mat_scale3 (scale, scale, 1.0),
-                            vxo_mat_translate3 (-im->width/2., -im->height/2., 0.),
-                            vo));
+                            vxo_chain (mat_scale,
+                                       vxo_mat_translate3(-im->width/2., -im->height/2., 0.),
+                                       vo));// drawing happens here
+
+        std::vector<float> points;
+        for(unsigned int i = 0; i < state->poses.size(); i++)
+        {
+            points.push_back(state->poses[i].x/state->grid.metersPerCell());
+            points.push_back(state->poses[i].y/state->grid.metersPerCell());
+            points.push_back(0.001f);
+        }
+        vx_resc_t *verts = vx_resc_copyf(&points[0], points.size());
+        vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "points"),
+                            vxo_chain (mat_scale,
+                                       vxo_points(verts, state->poses.size(), vxo_points_style(vx_red, 2.0f))));
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
+        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points"));
         image_u32_destroy (im);
+
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
         pthread_mutex_unlock(&state->gui_mutex);
 
@@ -227,7 +244,7 @@ main (int argc, char *argv[])
     state->lcm->subscribe("OCCUPANCY_GRID_GUI",
             &OccupancyGridGuiHandler::handleMessage,
             &gui_handler);
-    state->lcm->subscribe("MAEBOT_POSE", 
+    state->lcm->subscribe("MAEBOT_POSE_GUI", 
             &LocationHandler::handlePose,
             &location_handler);
 

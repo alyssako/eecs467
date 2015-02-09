@@ -51,7 +51,7 @@ class OccupancyGridMapper
         void setLCM(lcm::LCM *lcm_t);
         LaserScan calculateLaserOrigins();
         void updateGrid(LaserScan scan);
-        void publishOccupancyGrid();
+        void publishOccupancyGrid(maebot_pose_t pose);
         
         void drawLineMeters(double, double, double, double, double, eecs467::CellOdds, eecs467::CellOdds);
         void drawLineMeters(double, double, double, double, eecs467::CellOdds, eecs467::CellOdds);
