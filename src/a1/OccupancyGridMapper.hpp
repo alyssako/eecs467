@@ -46,6 +46,7 @@ class OccupancyGridMapper
         
         ApproxLaser approx_laser_;
         MovingLaser moving_laser_;
+        OdometryLaser odometry_laser_;
 
     public:
         OccupancyGridMapper();
@@ -61,12 +62,14 @@ class OccupancyGridMapper
         
         void addLaserScan(maebot_laser_scan_t input_scan);
         void addPose(maebot_pose_t input_pose);
+        void addMotorFeedback(maebot_motor_feedback_t input_feedback);
         ApproxLaser getApproxLaser();
         MovingLaser getMovingLaser();
         eecs467::OccupancyGrid getOccupancyGrid();
 
         bool laserScansEmpty();
         bool posesEmpty();
+        bool motorFeedbackEmpty();
 
         void lockMapperMutex();
         void unlockMapperMutex();
@@ -74,6 +77,9 @@ class OccupancyGridMapper
         void unlockPosesMutex();
         void lockLaserScansMutex();
         void unlockLaserScansMutex();
+        void lockMotorFeedbacksMutex();
+        void unlockMotorFeedbacksMutex();
+
         void wait();
         void signal();
 };

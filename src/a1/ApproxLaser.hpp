@@ -21,7 +21,6 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
-//#include "OccupancyGridMapper.hpp"
 #include "MovingLaser.hpp"
 
 /* class to figure out approximately where laser scan originated from */
@@ -30,8 +29,6 @@ class ApproxLaser
     private:
         /* keep track of past five poses */
         std::deque<maebot_pose_t> poses_;
-        //std::deque<maebot_laser_scan_t> lasers_;
-        //MovingLaser *moving_laser_;
 
     public:
         /*ApproxLaser(MovingLaser *laser_t){

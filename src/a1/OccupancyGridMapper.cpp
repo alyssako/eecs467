@@ -7,6 +7,7 @@ OccupancyGridMapper::OccupancyGridMapper() :
     pthread_mutex_init(&poses_mutex_, NULL);
     pthread_mutex_init(&laser_scans_mutex_, NULL);
     pthread_mutex_init(&mapper_mutex_, NULL);
+    pthread_mutex_init(&motor_feedback_mutex_, NULL);
     pthread_cond_init(&cv_, NULL);
 }
 
@@ -145,6 +146,11 @@ bool OccupancyGridMapper::posesEmpty()
     return poses_.empty();
 }
 
+bool OccupancyGridMapper::motorFeedbacksEmpty()
+{
+    return motor_feedbacks_.empty();
+}
+
 void OccupancyGridMapper::lockLaserScansMutex()
 {
     pthread_mutex_lock(&laser_scans_mutex_);
@@ -173,6 +179,16 @@ void OccupancyGridMapper::lockMapperMutex()
 void OccupancyGridMapper::unlockMapperMutex()
 {
     pthread_mutex_unlock(&mapper_mutex_);
+}
+
+void OccupancyGridMapper::lockMotorFeedbakcsMutex()
+{
+    pthread_mutex_lock(&motor_feedbacks_mutex_);
+}
+
+void OccupancyGridMapper::unlockMotorFeedbacksMutex()
+{
+    pthread_mutex_unlock(&motor_feedbacks_mutex_);
 }
 
 void OccupancyGridMapper::wait()

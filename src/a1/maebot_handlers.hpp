@@ -67,7 +67,8 @@ class MaebotLaserScanHandler
             grid_mapper_->lockLaserScansMutex();
             grid_mapper_->lockMapperMutex();
             grid_mapper_->addLaserScan(*msg);
-            if(!grid_mapper_->posesEmpty())
+            //if(!grid_mapper_->posesEmpty()) // task 1
+            if(!grid_mapper_->motorFeedbackEmpty()) // task 2
             {
                 grid_mapper_->signal();
             }
