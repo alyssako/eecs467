@@ -141,6 +141,8 @@ lcm_handle_thread (void *data)
 {
     state_t *state = (state_t*)data;
     while(1) state->lcm->handle();
+
+    return NULL;
 }
 
 // === Your code goes here ================================================
@@ -164,8 +166,8 @@ animate_thread (void *data)
 			for(int x = 0; x < im->width; x++)
 			{
 				int a = 255; //alpha transparency value.
-				int v = to_grayscale(state->grid.logOdds(x, y)) % 255;
-				im->buf[y*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
+				int v = 255 - to_grayscale(state->grid.logOdds(x, y));
+				im->buf[(im->height-1-y)*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
 			}
 		}
 		vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);

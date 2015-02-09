@@ -50,6 +50,11 @@ class ApproxLaser
         {
             return poses_.size() > 0;
         }
+
+        int posesSize()
+        {
+            return poses_.size();
+        }
 };
 
 #endif
