@@ -9,6 +9,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include <signal.h>
 #include <string>
+#include <iostream>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
 #include "lcmtypes/maebot_targeting_laser_command_t.hpp"
@@ -37,12 +38,14 @@ class MaebotPoseHandler
                            const maebot_pose_t *msg)
         {
             grid_mapper_->lockPosesMutex();
+            grid_mapper_->lockMapperMutex();
             grid_mapper_->addPose(*msg);
             if(!grid_mapper_->laserScansEmpty())
             {
                 grid_mapper_->signal();
             }
             grid_mapper_->unlockPosesMutex();
+            grid_mapper_->unlockMapperMutex();
         }
 };
 
@@ -62,12 +65,14 @@ class MaebotLaserScanHandler
                            const maebot_laser_scan_t *msg)
         {
             grid_mapper_->lockLaserScansMutex();
+            grid_mapper_->lockMapperMutex();
             grid_mapper_->addLaserScan(*msg);
             if(!grid_mapper_->posesEmpty())
             {
                 grid_mapper_->signal();
             }
             grid_mapper_->unlockLaserScansMutex();
+            grid_mapper_->unlockMapperMutex();
         }
 };
 

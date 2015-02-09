@@ -34,6 +34,9 @@
 
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
+#include "lcmtypes/maebot_pose_t.hpp"
+
+#include <vector>
 
 //typedef struct state state_t;
 struct state_t {
@@ -67,6 +70,7 @@ struct state_t {
 
     // occupancy grid stuff
     eecs467::OccupancyGrid grid;
+    std::vector<maebot_pose_t> poses;
 
     int location_count;
 };

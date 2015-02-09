@@ -169,14 +169,18 @@ static void* update_map(void *data)
 
     while(state->running)
     {
+        state->grid_mapper.lockMapperMutex();
         while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())
         {
             state->grid_mapper.wait();
         }
+        state->grid_mapper.unlockMapperMutex();
+        std::cout << "received message" << std::endl;
 
         LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
+        if(!updated_scan.valid) { continue; }
         state->grid_mapper.updateGrid(updated_scan);
-        state->grid_mapper.publishOccupancyGrid();
+        state->grid_mapper.publishOccupancyGrid(updated_scan.end_pose);
     }
     return NULL;
 }

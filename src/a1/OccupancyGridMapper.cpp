@@ -4,6 +4,10 @@
 OccupancyGridMapper::OccupancyGridMapper() :
 	occupancy_grid_(10, 10, 0.05)
 {
+    pthread_mutex_init(&poses_mutex_, NULL);
+    pthread_mutex_init(&laser_scans_mutex_, NULL);
+    pthread_mutex_init(&mapper_mutex_, NULL);
+    pthread_cond_init(&cv_, NULL);
 }
 
 OccupancyGridMapper::~OccupancyGridMapper()
@@ -16,13 +20,6 @@ void OccupancyGridMapper::setLCM(lcm::LCM *lcm_t){
 
 LaserScan OccupancyGridMapper::calculateLaserOrigins()
 {
-    pthread_mutex_lock(&mapper_mutex_);
-    if(laser_scans_.empty() || poses_.empty())
-    {
-        wait();
-    }
-    pthread_mutex_unlock(&mapper_mutex_);
-
     pthread_mutex_lock(&laser_scans_mutex_);
     pthread_mutex_lock(&poses_mutex_);
 
@@ -38,11 +35,19 @@ LaserScan OccupancyGridMapper::calculateLaserOrigins()
     {
         approx_laser_.addPose(&pose);
         LaserScan ls;
+        ls.valid = false;
         return ls;
     }
 
     approx_laser_.addPose(&pose);
+    std::cout << "approx_laser_.poses.size(): " << approx_laser_.posesSize() << std::endl;
     LaserScanRange lsr = approx_laser_.findPts(&laser_scan);
+    if(lsr.valid == false)
+    {
+        LaserScan ls;
+        ls.valid = false;
+        return ls;
+    }
 
     LaserScan ls = moving_laser_.findOrigin(lsr);
 
@@ -51,20 +56,23 @@ LaserScan OccupancyGridMapper::calculateLaserOrigins()
 
 void OccupancyGridMapper::updateGrid(LaserScan scan)
 {
-    srand (time(NULL));
-    for(uint i = 0; i < occupancy_grid_.widthInCells(); ++i)
+    std::cout << "scan.origins.size() : " << scan.origins.size() << std::endl;
+    for(unsigned int i = 0; i < scan.origins.size(); ++i)
     {
-        for(uint j = 0; j < occupancy_grid_.heightInCells(); ++j)
-        {
-            occupancy_grid_(i, j) = rand() % 255 - 128;
-        }
+        std::cout << "i: " << i << std::endl;
+        double a = scan.origins[i].theta - scan.scan.thetas[i];
+        double d = scan.scan.ranges[i];
+        double e_x = scan.origins[i].x + d * cos(a);
+        double e_y = scan.origins[i].y + d * sin(a);
+        drawLineMeters(scan.origins[i].x, scan.origins[i].y, e_x, e_y, -2, 1);
     }
 }
 
-void OccupancyGridMapper::publishOccupancyGrid()
+void OccupancyGridMapper::publishOccupancyGrid(maebot_pose_t pose)
 {
     maebot_occupancy_grid_t data = occupancy_grid_.toLCM();
     lcm->publish("OCCUPANCY_GRID_GUI", &data);
+    lcm->publish("MAEBOT_POSE_GUI", &pose);
     std::cout << "sent\n";
 }
 
@@ -74,53 +82,44 @@ void OccupancyGridMapper::publishOccupancyGrid()
 	inc		 : amount to travel along the line per loop (meters)
 	value 	 : value to set for all cells along the line
 */
-void OccupancyGridMapper::drawLineMeters(double s_x, double s_y, double e_x, double e_y, const double inc, eecs467::CellOdds value)
-{
-	drawLineCells((int)(s_x / occupancy_grid_.metersPerCell()),
-				  (int)(s_y / occupancy_grid_.metersPerCell()),
-				  (int)(e_x / occupancy_grid_.metersPerCell()),
-				  (int)(e_y / occupancy_grid_.metersPerCell()),
-				  inc / occupancy_grid_.metersPerCell(), value);
-}
-//Calls with a default increment of 1 cell
-void OccupancyGridMapper::drawLineMeters(double s_x, double s_y, double e_x, double e_y, eecs467::CellOdds value)
-{
-	drawLineCells((int)(s_x / occupancy_grid_.metersPerCell()),
-				  (int)(s_y / occupancy_grid_.metersPerCell()),
-				  (int)(e_x / occupancy_grid_.metersPerCell()),
-				  (int)(e_y / occupancy_grid_.metersPerCell()),
-				  1, value);
-}
-/*
-	s_x, s_y :	start position of the line (cell coords, not meters)
-	e_x, e_y : end position of the line (cell coords, not meters)
-	inc		 : amount to travel along the line per loop (cell coords, not meters)
-	value 	 : value to set for all cells along the line
-*/
-void OccupancyGridMapper::drawLineCells(int s_x, int s_y, int e_x, int e_y, const double inc, eecs467::CellOdds value)
-
+void OccupancyGridMapper::drawLineMeters(double s_x, double s_y, double e_x, double e_y, double inc, eecs467::CellOdds value, eecs467::CellOdds value_end)
 {
 	double a = atan2(e_y - s_y, e_x - s_x);
-	int n = ceil(sqrt((e_x - s_x)*(e_x - s_x)+(e_y - s_y)*(e_y - s_y)) / inc);
+    double dist = sqrt((e_x - s_x)*(e_x - s_x)+(e_y - s_y)*(e_y - s_y));
+	int n = ceil(dist / inc);
+    inc = dist/n;
 	double i_x = cos(a) * inc,
 		   i_y = sin(a) * inc,
 		   p_x = s_x,
 		   p_y = s_y;
+
+    eecs467::Point<double> last_cell(e_x, e_y);
+    last_cell = eecs467::global_position_to_grid_cell(last_cell, occupancy_grid_);
 		   
-	for(int i = 0; i < n; i++)
+	for(int i = 0; i <= n; i++)
 	{
-		int v = (int)occupancy_grid_.logOdds(p_x, p_y) + (int)value;
-		v = v > INT8_MAX ? INT8_MAX : (v < INT8_MIN ? INT8_MIN : v);
-		occupancy_grid_.setLogOdds(p_x, p_y, v);
+        int v;
+        eecs467::Point<double> p(p_x, p_y);
+		auto p_origin = eecs467::global_position_to_grid_cell(p, occupancy_grid_);
+        if(p_origin == last_cell)
+        {
+            v = (int)occupancy_grid_.logOdds(p_origin.x, p_origin.y) + (int)value_end;
+        }
+        else
+        {
+            v = (int)occupancy_grid_.logOdds(p_origin.x, p_origin.y) + (int)value;
+        }
+        v = v > 127 ? 127 : (v < -127 ? -127 : v);
+        occupancy_grid_.setLogOdds(p_origin.x, p_origin.y, v);
 			
 		p_x += i_x;
 		p_y += i_y;
 	}
 }
 //Calls with a default increment of 1 cell
-void OccupancyGridMapper::drawLineCells(int s_x, int s_y, int e_x, int e_y, eecs467::CellOdds value)
+void OccupancyGridMapper::drawLineMeters(double s_x, double s_y, double e_x, double e_y, eecs467::CellOdds value, eecs467::CellOdds value_end)
 {
-	drawLineCells(s_x, s_y, e_x, e_y, 1, value);
+	drawLineMeters(s_x, s_y, e_x, e_y, occupancy_grid_.metersPerCell(), value, value_end);
 }
 
 ApproxLaser OccupancyGridMapper::getApproxLaser()
@@ -164,6 +163,16 @@ void OccupancyGridMapper::lockPosesMutex()
 void OccupancyGridMapper::unlockPosesMutex()
 {
     pthread_mutex_unlock(&poses_mutex_);
+}
+
+void OccupancyGridMapper::lockMapperMutex()
+{
+    pthread_mutex_lock(&mapper_mutex_);
+}
+
+void OccupancyGridMapper::unlockMapperMutex()
+{
+    pthread_mutex_unlock(&mapper_mutex_);
 }
 
 void OccupancyGridMapper::wait()

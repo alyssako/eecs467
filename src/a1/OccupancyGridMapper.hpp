@@ -25,6 +25,8 @@
 #include "mapping/occupancy_grid_utils.hpp"
 #include "ApproxLaser.hpp"
 
+#include "math/point.hpp"
+
 class OccupancyGridMapper
 {
     private:
@@ -52,12 +54,10 @@ class OccupancyGridMapper
         void setLCM(lcm::LCM *lcm_t);
         LaserScan calculateLaserOrigins();
         void updateGrid(LaserScan scan);
-        void publishOccupancyGrid();
+        void publishOccupancyGrid(maebot_pose_t pose);
         
-        void drawLineMeters(double, double, double, double, const double, eecs467::CellOdds);
-        void drawLineMeters(double, double, double, double, eecs467::CellOdds);
-        void drawLineCells(int, int, int, int, const double, eecs467::CellOdds);
-        void drawLineCells(int, int, int, int, eecs467::CellOdds);
+        void drawLineMeters(double, double, double, double, double, eecs467::CellOdds, eecs467::CellOdds);
+        void drawLineMeters(double, double, double, double, eecs467::CellOdds, eecs467::CellOdds);
         
         void addLaserScan(maebot_laser_scan_t input_scan);
         void addPose(maebot_pose_t input_pose);
@@ -68,6 +68,8 @@ class OccupancyGridMapper
         bool laserScansEmpty();
         bool posesEmpty();
 
+        void lockMapperMutex();
+        void unlockMapperMutex();
         void lockPosesMutex();
         void unlockPosesMutex();
         void lockLaserScansMutex();

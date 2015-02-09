@@ -18,7 +18,7 @@
 
 #include "MovingLaser.hpp"
 
-#define testing 1
+#define testing 0
 
 using namespace std;
 //Creates and returns a LaserScan and fills its origins vector.
@@ -34,6 +34,8 @@ LaserScan MovingLaser::findOrigin(LaserScanRange approx_scan)
     }
 	
 	ls.scan = approx_scan.scan;
+    ls.valid = true;
+    ls.end_pose = approx_scan.end_pose;
 	
 	return ls;
 }
@@ -44,21 +46,12 @@ maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_p
 	/*if(t < a.utime || t > b.utime)
 		cout << "Out of range! t: " << t << ", a: " << a.utime << ", b: " << b.utime << endl;*/
 
-	float percent = (t - a.utime) / (b.utime - a.utime);
+	double percent = (t - (double)a.utime) / ((double)b.utime - (double)a.utime);
 	maebot_pose_t n;
 	n.x = (b.x - a.x) * percent + a.x;
 	n.y = (b.y - a.y) * percent + a.y;
-	n.theta = angle_diff(a.theta, b.theta) + a.theta;
+	n.theta = eecs467::wrap_to_2pi(eecs467::angle_diff(eecs467::wrap_to_2pi(b.theta), eecs467::wrap_to_2pi(a.theta)) * percent + eecs467::wrap_to_2pi(a.theta));
 	n.utime= t;
     if(testing) { cout << "\tx coord: " << n.x << "\n\ty coord: " << n.y << "\n\ttheta: " << n.theta << "\n\ttime: " << n.utime << endl; }
 	return n;
-}
-
-//Returns the difference b-a (radians) in the range [-PI, PI)
-float MovingLaser::angle_diff(float a, float b)
-{
-	float d = b - a;
-	while(d >= 3.1415926) d -= 6.2831852;
-	while(d < -3.1415926) d += 6.2831852;
-	return d;
 }

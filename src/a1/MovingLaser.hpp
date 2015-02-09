@@ -18,13 +18,17 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
+#include "math/angle_functions.hpp"
+
 //#include "OccupancyGridMapper.hpp"
 
 /* store lidar scans and associated poses where they originated */
 struct LaserScan
 {
+    bool valid;
     std::vector<maebot_pose_t> origins;
     maebot_laser_scan_t scan;
+    maebot_pose_t end_pose;
 };
 
 /* store the lidar scan and the two poses it originated between */
@@ -42,7 +46,6 @@ class MovingLaser
     public:
         LaserScan findOrigin(LaserScanRange approx_scan);
         maebot_pose_t findOriginSingle(int64_t, maebot_pose_t, maebot_pose_t);
-        float angle_diff(float, float);
 };
 
 #endif
