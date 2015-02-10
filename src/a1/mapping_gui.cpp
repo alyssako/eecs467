@@ -38,6 +38,7 @@
 #define SCREEN_HEIGHT 500
 
 using namespace std;
+typedef struct gui_state state_t;
 
 // It's good form for every application to keep its state in a struct.
 // Moved to OccupancyGridHandler.hpp 

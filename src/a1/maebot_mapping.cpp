@@ -42,19 +42,21 @@
 typedef struct state state_t;
 struct state
 {
+    int running;
+
     double joy_bounds;
     double last_click[3];
 
     maebot_motor_command_t cmd;
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
-    pthread_mutex_t render_mutex;
-//    pthread_t lcm_thread;
+
+    //pthread_t lcm_thread;
     pthread_t render_thread;
+    pthread_mutex_t render_mutex;
+    pthread_mutex_t layer_mutex;
+
     pthread_t update_map_thread;
-
-
-    int running;
 
     getopt_t *gopt;
     char *url;
@@ -63,8 +65,6 @@ struct state
 
     lcm::LCM *lcm;
     pthread_mutex_t lcm_mutex;
-
-    pthread_mutex_t layer_mutex;
 
     OccupancyGridMapper grid_mapper;
 };
@@ -153,7 +153,7 @@ static void* send_cmds(void *data)
         state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
 
         pthread_mutex_unlock(&state->cmd_mutex);
-        
+
         auto a = state->grid_mapper.getOccupancyGrid().toLCM();
         state->lcm->publish("OCCUPANCY_GRID_GUI", &a);
 
@@ -170,15 +170,28 @@ static void* update_map(void *data)
     while(state->running)
     {
         state->grid_mapper.lockMapperMutex();
-        while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())
-        {
+
+#ifdef TASK_1
+        while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())        
             state->grid_mapper.wait();
-        }
+#endif
+#ifdef TASK_2
+        while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.motorFeedbacksEmpty())
+            state->grid_mapper.wait();
+#endif
+
         state->grid_mapper.unlockMapperMutex();
         std::cout << "received message" << std::endl;
 
+#ifdef TASK_1
         LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
-        if(!updated_scan.valid) { continue; }
+#endif
+#ifdef TASK_2
+        LaserScan updated_scan = state->grid_mapper.calculateQuarterLaserOrigins();
+#endif
+
+        if(!updated_scan.valid) continue;
+
         state->grid_mapper.updateGrid(updated_scan);
         state->grid_mapper.publishOccupancyGrid(updated_scan.end_pose);
     }
@@ -215,7 +228,7 @@ int main(int argc, char **argv)
     getopt_add_int(state->gopt, 'p', "port", "15151", "Vx display port");
 
     if (!getopt_parse(state->gopt, argc, argv, 0) ||
-        getopt_get_bool(state->gopt, "help"))
+            getopt_get_bool(state->gopt, "help"))
     {
         getopt_do_usage(state->gopt);
         exit(-1);
@@ -225,28 +238,34 @@ int main(int argc, char **argv)
     verbose = getopt_get_bool(state->gopt, "verbose");
 
     // LCM subscriptions
-    MaebotPoseHandler pose_handler(&state->grid_mapper);
-    MaebotLaserScanHandler laser_scan_handler(&state->grid_mapper);
-
-    state->lcm->subscribe("MAEBOT_POSE",
-                          &MaebotPoseHandler::handleMessage,
-                          &pose_handler);
-    // odometry
+    MaebotLCMHandler lcm_handler(&state->grid_mapper);
     state->lcm->subscribe("MAEBOT_LASER_SCAN",
-                          &MaebotLaserScanHandler::handleMessage,
-                          &laser_scan_handler);
+            &MaebotLCMHandler::handleLaserScan,
+            &lcm_handler);
+
+#ifdef TASK_1 
+    state->lcm->subscribe("MAEBOT_POSE",
+            &MaebotLCMHandler::handlePose,
+            &lcm_handler);
+#endif
+#ifdef TASK_2
+    state->lcm->subscribe("MAEBOT_MOTOR_FEEDBACK",
+            &MaebotLCMHandler::handleMotorFeedback,
+            &lcm_handler);
+#endif
+
     std::cout << "listening" << std::endl;
 
-    // Spin up thread(s)
+    // Spin up threads
     pthread_create(&state->cmd_thread, NULL, send_cmds, (void*)state);
-//    pthread_create(&state->lcm_thread, NULL, receive_lcm, (void*)state);
+    //    pthread_create(&state->lcm_thread, NULL, receive_lcm, (void*)state);
     pthread_create(&state->update_map_thread, NULL, update_map, state);
 
     // Loop forever
     while(state->lcm->handle() == 0);
 
-//    pthread_join (state->lcm_thread, NULL);
-//    pthread_join (state->cmd_thread, NULL);
+    pthread_join (state->update_map_thread, NULL);
+    pthread_join (state->cmd_thread, NULL);
 
     return 0;
 }

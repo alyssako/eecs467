@@ -49,8 +49,8 @@ class OccupancyGridGuiHandler
 class LocationHandler
 {
     public:
-        state_t *state;
-        LocationHandler(state_t *state_t) : state(state_t) {}
+        gui_state *state;
+        LocationHandler(gui_state *state_t) : state(state_t) {}
 
         ~LocationHandler(){}
 

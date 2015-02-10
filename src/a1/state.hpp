@@ -38,8 +38,14 @@
 
 #include <vector>
 
-//typedef struct state state_t;
-struct state_t {
+// magical numbers/things
+#define TASK_1
+#define PARTICAL_NUM 1000
+#define STDDEV 0.4 // I don't know
+
+
+
+struct gui_state {
     bool running;
 
     getopt_t        *gopt;
