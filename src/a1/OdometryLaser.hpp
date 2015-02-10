@@ -23,18 +23,25 @@
 
 #include "MovingLaser.hpp"
 
+struct OdometryLaserRange
+{
+    bool valid;
+    maebot_pose_t start_pose;
+    maebot_pose_t end_pose;
+    maebot_laser_scan_t scan;
+};
+
 class OdometryLaser
 {
     private:
-        /* keep track of past five poses */
-        std::deque<maebot_pose_t> poses_;
+        /* keep track of past five odometry data*/
+        std::deque<maebot_pose_t> odometries_;
 
     public:
         OdometryLaser(){}
 
         ~OdometryLaser(){}
 
-        /* find the two points the scan originated between */
         LaserScanRange findPts(const maebot_laser_scan_t *scan);
 
         /* add pose to deque (and delete oldest pose */

@@ -60,7 +60,6 @@ LaserScan OccupancyGridMapper::calculateLaserOrigins()
 #ifdef TASK_2
 LaserScan OccupancyGridMapper::calculateQuarterLaserOrigins()
 { 
-
     pthread_mutex_lock(&laser_scans_mutex_);
     pthread_mutex_lock(&motor_feedbacks_mutex_);
 
