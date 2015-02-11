@@ -31,24 +31,48 @@
 #include "math/point.hpp"
 #include "MagicNumbers.hpp"
 
+// (0.032 * 3.14)/480.0
+#define TICKS_TO_DIST 0.00020933
+
+#define POSES_SIZE 20
+
 class Slam
 {
     private:
         Particles particles_;
-        OccupancyGridMapper grid_mapper_;
+        OccupancyGridMapper *grid_mapper_;
 
-        std::queue<maebot_motor_feedback_t> motor_feedbacks_;
-        pthread_mutex_t motor_feedbacks_mutex_;
+        std::deque<maebot_pose_t> poses_;
+        pthread_mutex_t poses_mutex_;
+
+        pthread_mutex_t slam_mutex_;
+        pthread_cond_t cv_;
+        bool scan_received_;
+
+        pthread_mutex_t grid_mutex_;
+        pthread_cond_t grid_cv_;
+        bool grid_initialized_;
 
         lcm::LCM *lcm;
 
+        float left_prev_dist;
+        float right_prev_dist;
+        maebot_pose_t origin;
+
     public:
+        Slam() : grid_mapper_(gm) {
+            slam_muex
+        }
+        ~Slam() {}
+
         void setLCM(lcm::LCM *lcm_t) : lcm(lcm_t) { }
         void addMotorFeedback(maebot_motor_feedback_t input_feedback);
         
-        bool motorFeedbacksEmpty();
-        void lockMotorFeedbacksMutex();
-        void unlockMotorFeedbacksMutex();
+        bool posesEmpty();
+        void lockPosesMutex();
+        void unlockPosesMutex();
+        maebot_pose_t getDelta(float left_ticks, float right_ticks);
+        void publish();
 };
 
 #endif

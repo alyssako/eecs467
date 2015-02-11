@@ -8,6 +8,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include <signal.h>
 #include <string>
+#include <deque>
 #include <vector>
 #include <iostream>
 #include <cmath>
@@ -47,6 +48,7 @@ class Particles
     public:
         Particles();
         ~Particles();
+        maebot_pose_t toPose(int index);
         
         void moveRandom(float mean_x, float mean_y, float mean_theta, float stddev_x, float stddev_y, float stddev_theta);
         void moveRandomSingle(double delta_s, double alpha, double theta_alpha, int index);
@@ -66,8 +68,7 @@ class Particles
         void resample();
         
         MovingLaser::LaserScan getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::vector<maebot_pose_t> poses, MovingLaser *moving_laser)
-        std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::vector<maebot_pose_t> poses)
+        std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::deque<maebot_pose_t> poses)
 };
-
 
 #endif

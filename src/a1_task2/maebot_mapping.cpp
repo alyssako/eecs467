@@ -32,6 +32,7 @@
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridMapper.hpp"
+#include "Slam.hpp"
 
 #define MAX_REVERSE_SPEED -1.0f
 #define MAX_FORWARD_SPEED 1.0f
@@ -67,6 +68,7 @@ struct state
     pthread_mutex_t lcm_mutex;
 
     OccupancyGridMapper grid_mapper;
+    Slam slam;
 };
 
 static int verbose = 0;
@@ -169,27 +171,23 @@ static void* update_map(void *data)
 
     while(state->running)
     {
+        if(task2)
+        {
+            state->slam.gridMutexLock();
+            while(!state->slam.gridInitialized())
+            {
+                state->slam.gridCVWait();
+            }
+            state->slam.gridMutexUnlock();
+        }
         state->grid_mapper.lockMapperMutex();
 
-#ifdef TASK_1
         while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())        
             state->grid_mapper.wait();
-#endif
-#ifdef TASK_2
-        while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.motorFeedbacksEmpty())
-            state->grid_mapper.wait();
-#endif
-
         state->grid_mapper.unlockMapperMutex();
         std::cout << "received message" << std::endl;
 
-#ifdef TASK_1
         LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
-#endif
-#ifdef TASK_2
-        LaserScan updated_scan = state->grid_mapper.calculateQuarterLaserOrigins();
-#endif
-
         if(!updated_scan.valid) continue;
 
         state->grid_mapper.updateGrid(updated_scan);

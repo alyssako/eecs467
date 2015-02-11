@@ -14,6 +14,16 @@ Particles::~Particles()
 {
 }
 
+maebot_pose_t Particles::toPose(int index)
+{
+    maebot_pose_t retval;
+    retval.x = particles_[index].x;
+    retval.y = particles_[index].y;
+    retval.theta = particles_[index].theta;
+
+    return retval;
+}
+
 void Particles::updateParticles(float delta_x, float delta_y, float delta_theta, occupancy_grid_t *grid, maebot_laser_scan_t *scan)
 {
     moveRandom(delta_x, delta_y, delta_theta);
@@ -188,31 +198,31 @@ MovingLaser::LaserScan Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan
     return ls;
 }
 
-std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::vector<maebot_pose_t> poses)
+std::vector<maebot_pose_t> Particles::findLeftRightPoses(int64_t time, std::deque<maebot_pose_t> poses)
 {
-    vector<maebot_pose_t> m;
-    for(int i = 0; i < poses.size(); i++)
+    std::vector<maebot_pose_t> m;
+    for(std::deque<maebot_pose_t>::iterator it = poses.begin(); it != poses.end(); it++)
     {
         if(poses[i].utime > time)
         {
             if(i-1 < 0)
-                m.push_back(poses[i]);
+                m.push_back(*it);
             else
-                m.push_back(poses[i-1]);
-            m.push_back(poses[i]);
+                m.push_back(*(it-1));
+            m.push_back(*it);
             return m;
         }
     }
     
     if(poses.size() >= 2)
     {
-        m.push_back(poses[poses.size()-1]);
-        m.push_back(poses[poses.size()-2]);
+        m.push_back(*(poses.end()-1));
+        m.push_back(*(poses.end()-2));
     }
     else if(poses.size() == 1)
     {
-        m.push_back(poses[poses.size()-1]);
-        m.push_back(poses[poses.size()-1]);
+        m.push_back(*(poses.end()-1));
+        m.push_back(*(poses.end()-1));
     }
     
     return m;
