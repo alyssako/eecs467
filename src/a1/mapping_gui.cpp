@@ -30,6 +30,7 @@
 #include "eecs467_util.h"    // This is where a lot of the internals live
 
 #include "state.hpp"
+#include "MagicNumbles.hpp"
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridGuiHandler.hpp"
