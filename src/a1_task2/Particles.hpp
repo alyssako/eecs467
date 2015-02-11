@@ -65,8 +65,8 @@ class Particles
         
         void resample();
         
-        MovingLaser::LaserScan Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, vector<maebot_pose_t> poses, MovingLaser *moving_laser)
-        vector<maebot_pose_t> findLeftRightPoses(int64_t time, vector<maebot_pose_t> poses)
+        MovingLaser::LaserScan getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::vector<maebot_pose_t> poses, MovingLaser *moving_laser)
+        std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::vector<maebot_pose_t> poses)
 };
 
 

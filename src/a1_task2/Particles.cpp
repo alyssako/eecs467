@@ -14,6 +14,15 @@ Particles::~Particles()
 {
 }
 
+void Particles::updateParticles(float delta_x, float delta_y, float delta_theta, occupancy_grid_t *grid, maebot_laser_scan_t *scan)
+{
+    moveRandom(delta_x, delta_y, delta_theta);
+    calculateProbaility(grid, scan);
+    normalizeProbabilities();
+    resample();
+    most_likely_ = particles_[findLargestProbability()];
+}
+
 void Particles::moveRandom(float delta_x, float delta_y, float delta_theta)
 {
     double delta_s = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
@@ -87,8 +96,8 @@ void Particles::calculateProbabilitySingle(occupancy_grid_t *grid, maebot_laser_
 
 void Particles::normalizeProbabilities()
 {
-    float max = findLargestProbability();
-    subtractProbabilities(max);
+    index_max = findLargestProbability();
+    subtractProbabilities(particles_[index_max].probability);
     exponentiate();
     float sum = sumProbabilities();
     divideProbabilities(sum);
@@ -112,15 +121,15 @@ void Particles::subtractProbabilities(float max)
     return;
 }
 
-float Particles::findLargestProbability()
+int Particles::findLargestProbability()
 {
-    float max_probability = particles_[0].probability;
+    int index = 0;
     for(int i = 1; i < NUM_PARTICLES; i++)
     {
-        if(particles_[i].probability > max_probability)
-            max_probability = particles_[i].probability;
+        if(particles_[i].probability > particles_[index].probability)
+            index = i;
     }
-    return max_probability;
+    return index;
 }
 
 float Particles::sumProbabilities()
@@ -165,9 +174,11 @@ void Particles::resample()
     particles_ = resampled;
 }
 
-MovingLaser::LaserScan Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, vector<maebot_pose_t> poses, MovingLaser *moving_laser)
+/* find position of laser scan and positions of individual laser beams within scan */
+
+MovingLaser::LaserScan Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::vector<maebot_pose_t> poses, MovingLaser *moving_laser)
 {
-    auto mB = findLeftRightPoses(scanB->utime, poses);
+    std::vector<maebot_pose_t> mB = findLeftRightPoses(scanB->utime, poses);
     if(mB.size() < 2)
         std::cout << "This isn't working either...\n";
     maebot_pose_t poseB = moving_laser->findOriginSingle(scanB->utime, mB[0], mB[1]);
@@ -177,7 +188,7 @@ MovingLaser::LaserScan Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan
     return ls;
 }
 
-vector<maebot_pose_t> findLeftRightPoses(int64_t time, vector<maebot_pose_t> poses)
+std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::vector<maebot_pose_t> poses)
 {
     vector<maebot_pose_t> m;
     for(int i = 0; i < poses.size(); i++)
