@@ -16,10 +16,8 @@ LaserScanRange ApproxLaser::findPts(const maebot_laser_scan_t *scan)
         bool found = false;
         std::deque<maebot_pose_t>::iterator iter;
         int i = 0;
-        std::cout << "scan time: " << scan->utime << std::endl;
         for(iter = poses_.begin(); iter != poses_.end(); ++iter)
         {
-            std::cout << "poses_[" << i << "]: " << iter->utime << std::endl;
             // the end time (scan->utime) of the lidar scan should be equal to the
             // utime of the pose
             if(iter->utime == scan->utime)
@@ -41,9 +39,6 @@ LaserScanRange ApproxLaser::findPts(const maebot_laser_scan_t *scan)
         retval.valid = true;
         retval.start_pose = start;
         retval.end_pose = end;
-
-        std::cout << "found start time: " << retval.start_pose.utime << std::endl;
-        std::cout << "found end time:   " << retval.end_pose.utime << std::endl;
     }
 
     //lasers_.pop();
