@@ -75,4 +75,39 @@ struct gui_state {
     int location_count;
 };
 
+struct error_state {
+    bool running;
+
+    getopt_t        *gopt;
+    parameter_gui_t *pg;
+
+    // image stuff
+    char *img_url;
+    int   img_height;
+    int   img_width;
+
+    // vx stuff
+    vx_application_t    vxapp;
+    vx_world_t         *vxworld;      // where vx objects are live
+    vx_event_handler_t *vxeh; // for getting mouse, key, and touch events
+    vx_mouse_event_t    last_mouse_event;
+    pthread_mutex_t gui_mutex;
+
+    // threads stuff
+    pthread_t animate_thread;
+    pthread_t lcm_thread;
+
+    // LCM stuff
+    lcm::LCM *lcm;
+    pthread_mutex_t lcm_mutex;
+
+    // for accessing the arrays stuff
+    pthread_mutex_t mutex;
+
+    // occupancy grid stuff
+    eecs467::OccupancyGrid grid;
+    std::vector<maebot_pose_t> poses;
+    std::vector<maebot_pose_t> truePoses;
+};
+
 #endif

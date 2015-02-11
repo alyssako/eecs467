@@ -30,7 +30,6 @@
 #include "eecs467_util.h"    // This is where a lot of the internals live
 
 #include "state.hpp"
-#include "MagicNumbles.hpp"
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridGuiHandler.hpp"
@@ -39,7 +38,7 @@
 #define SCREEN_HEIGHT 500
 
 using namespace std;
-typedef struct gui_state state_t;
+typedef struct error_state state_t;
 
 // It's good form for every application to keep its state in a struct.
 // Moved to OccupancyGridHandler.hpp 
@@ -52,40 +51,12 @@ typedef struct gui_state state_t;
     static void
 my_param_changed (parameter_listener_t *pl, parameter_gui_t *pg, const char *name)
 {
-    if (0==strcmp ("sl1", name))
-        printf ("sl1 = %f\n", pg_gd (pg, name));
-    else if (0==strcmp ("sl2", name))
-        printf ("sl2 = %d\n", pg_gi (pg, name));
-    else if (0==strcmp ("cb1", name) || 0==strcmp ("cb2", name))
-        printf ("%s = %d\n", name, pg_gb (pg, name));
-    else
-        printf ("%s changed\n", name);
+    return 0;
 }
 
     static int
 mouse_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_mouse_event_t *mouse)
 {
-    state_t *state = (state_t*)vxeh->impl;
-
-    // vx_camera_pos_t contains camera location, field of view, etc
-    // vx_mouse_event_t contains scroll, x/y, and button click events
-
-    if ((mouse->button_mask & VX_BUTTON1_MASK) &&
-            !(state->last_mouse_event.button_mask & VX_BUTTON1_MASK)) {
-
-        vx_ray3_t ray;
-        vx_camera_pos_compute_ray (pos, mouse->x, mouse->y, &ray);
-
-        double ground[3];
-        vx_ray3_intersect_xy (&ray, 0, ground);
-
-        printf ("Mouse clicked at coords: [%8.3f, %8.3f]  Ground clicked at coords: [%6.3f, %6.3f]\n",
-                mouse->x, mouse->y, ground[0], ground[1]);
-    }
-
-    // store previous mouse event to see if the user *just* clicked or released
-    state->last_mouse_event = *mouse;
-
     return 0;
 }
 
@@ -116,6 +87,11 @@ lcm_handle_thread (void *data)
     return NULL;
 }
 
+float getDistance(maebot_pose_t &a, maebot_pose_t &b)
+{
+    return sqrt(pow(a.x-b.x, 2) + pow(a.y-b.y, 2));
+}
+
 // === Your code goes here ================================================
 // The render loop handles your visualization updates. It is the function run
 // by the animate_thread. It periodically renders the contents on the
@@ -130,59 +106,43 @@ animate_thread (void *data)
     // when the window is closed/Ctrl+C is received.
     while (state->running) 
     {
-		//cout << "Animate Thread!" << endl;
-		image_u32_t *im = image_u32_create(state->grid.widthInCells(), state->grid.heightInCells());
-		for(int y = 0; y < im->height; y++)
-		{
-			for(int x = 0; x < im->width; x++)
-			{
-				int a = 255; //alpha transparency value.
-				int v = 255 - to_grayscale(state->grid.logOdds(x, y));
-				im->buf[(im->height-1-y)*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
-			}
-		}
-        vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
-        const double scale = 1./im->width;
-
-        auto mat_scale = vxo_mat_scale3(scale, scale, 1.0);
-        vxo_mat_translate3(-im->width/2., -im->height/2., 0.);
-
         pthread_mutex_lock(&state->gui_mutex);
-        vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
-                            vxo_chain (mat_scale,
-                                       vxo_mat_translate3(-im->width/2., -im->height/2., 0.),
-                                       vo));// drawing happens here
 
-        std::vector<float> points;
-        for(unsigned int i = 0; i < state->poses.size(); i++)
+        std::vector<float> errors;
+        unsigned int size = (state->poses.size() < state->truePoses.size()) ? 
+                             state->poses.size() : state->truePoses.size();
+
+        for(unsigned int i = 0; i < size; i++)
         {
-            points.push_back(state->poses[i].x/state->grid.metersPerCell());
-            points.push_back(state->poses[i].y/state->grid.metersPerCell());
-            points.push_back(0.001f);
+            errors.push_back(i*0.001f);
+            errors.push_back(getDistance(state->poses[i], state->truePoses[i]));
+            errors.push_back(0.001f);
         }
+       
+        std::vector<float> axis;
+        axis.push_back(0.0f);
+        axis.push_back(0.0f);
+        axis.push_back(0.0f);
+        axis.push_back(size*0.00105f);
+        axis.push_back(0.0f);
+        axis.push_back(0.0f);
+        axis.push_back(0.0f);
+        axis.push_back(0.0f);
+        axis.push_back(0.0f);
+        axis.push_back(0.0f);
+        axis.push_back(0.01f);
+        axis.push_back(0.0f);
         
-        std::vector<float> truePoints;
-        for(unsigned int i = 0; i < state->turePoses.size(); i++)
-        {
-            truePoints.push_back(state->truePoses[i].x/state->grid.metersPerCell());
-            truePoints.push_back(state->truePoses[i].y/state->grid.metersPerCell());
-            truePoints.push_back(0.001f);
-        }
-
-        vx_resc_t *verts = vx_resc_copyf(&points[0], points.size());
-        vx_resc_t *trueVerts = vx_resc_copyf(&truePoints[0], truePoints.size());
-
         vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
+        vx_resc_t *verts = vx_resc_copyf(&errors[0], size);
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
-                                       vxo_points(verts, state->poses.size(), vxo_points_style(vx_blue, 2.0f))));
-        vx_buffer_add_back (buff,
-                            vxo_chain (mat_scale,
-                                       vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_red, 2.0f))));
+                                       vxo_points(verts, state->poses.size(), 
+                                                  vxo_points_style(vx_red, 2.0f))));
 
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points"));
-        image_u32_destroy (im);
+        vx_resc_t *axisV = vx_resc_copyf(axis, 12);
+        vx_buffer_add_back(buff, vxo_lines(axisV, 4, GL_LINES, vxo_lines_style(vx_blue, 1.0f)));
+        vx_buffer_swap(buff);
 
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
         pthread_mutex_unlock(&state->gui_mutex);
@@ -192,16 +152,6 @@ animate_thread (void *data)
 
     return NULL;
 }
-
-//void * 
-//receive_lcm_msg (void *data)
-//{
-//    state_t *state = (state_t *)data;
-//
-//    while(1)
-//    
-//    return NULL;
-//}
 
     state_t *
 state_create (void)
@@ -253,23 +203,16 @@ main (int argc, char *argv[])
     eecs467_init (argc, argv);
     state_t *state = state_create ();
 
-    OccupancyGridGuiHandler gui_handler(&state->grid);
     LocationHandler location_handler(state);
 
     state->lcm = new lcm::LCM;
     pthread_mutex_init(&state->lcm_mutex, NULL);
 
-    state->lcm->subscribe("OCCUPANCY_GRID_GUI",
-            &OccupancyGridGuiHandler::handleMessage,
-            &gui_handler);
     state->lcm->subscribe("MAEBOT_POSE_GUI", 
             &LocationHandler::handlePose,
             &location_handler);
     state->lcm->subscribe("MAEBOT_POSE", 
             &LocationHandler::handleTruePose,
-            &location_handler);
-    state->lcm->subscribe("MAEBOT_PARTICLE_GUI", 
-            &LocationHandler::handlepParticle,
             &location_handler);
 
     // Parse arguments from the command line, showing the help
