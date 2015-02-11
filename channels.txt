@@ -7,3 +7,22 @@ MAEBOT_VELOCITY_COMMAND
 MAEBOT_LASER_SCAN
 MAEBOT_POSE       
 
+
+    //update the distance traveled since last timestep
+    double cur_dist = (msg->encoder_right_ticks/480.0) * 0.032 * 3.14;
+    double right_step = cur_dist - state->right_prev_dist;
+    printf("cur_dist: prev_dist: right_step:\t%f\t%f\t%f\n", cur_dist, state->right_prev_dist, right_step);
+    state->right_prev_dist = cur_dist;
+
+    cur_dist = (msg->encoder_left_ticks/480.0) * 0.032 *3.14;
+    double left_step = cur_dist - state->left_prev_dist;
+    printf("cur_dist: prev_dist: left_step:\t%f\t%f\t%f\n", cur_dist, state->left_prev_dist, left_step);
+    state->left_prev_dist = cur_dist;
+
+    //odometry
+    double s_ = (right_step + left_step)/2;
+    double delta_theta = (right_step - left_step)/0.08;
+    double alpha = delta_theta/2;
+    double x = cos(state->theta_0 + alpha) * s_ + state->x_0; //tot dist traveled
+    double y = sin(state->theta_0 + alpha) * s_ + state->y_0; //tot dist traveled
+    double theta = delta_theta + state->theta_0;
