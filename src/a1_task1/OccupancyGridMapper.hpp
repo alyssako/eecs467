@@ -23,16 +23,9 @@
 
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
-
 #include "ApproxLaser.hpp"
 
 #include "math/point.hpp"
-#include "MagicNumbers.hpp"
-
-#ifdef TASK_2
-#include "Relocator.hpp"
-//#include "OdometryLaser.hpp"
-#endif
 
 class OccupancyGridMapper
 {
@@ -42,17 +35,9 @@ class OccupancyGridMapper
         
         std::queue<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
-
-#ifdef TASK_2
-        std::queue<maebot_motor_feedback_t> motor_feedbacks_;
-        pthread_mutex_t motor_feedbacks_mutex_;
-        //OdometryLaser odometry_laser_;
-
-        Relocator relocator;
-#endif
-
+        
         pthread_cond_t cv_;
-        pthread_mutex_t mapper_mutex_; // lock used with cv to wait until poses_/motor_feedbacks_ and laser_scans_ are both nonempty
+        pthread_mutex_t mapper_mutex_; // lock used with cv to wait until poses_ and laser_scans_ are both nonempty
         eecs467::OccupancyGrid occupancy_grid_;
         lcm::LCM *lcm;
         
@@ -64,12 +49,7 @@ class OccupancyGridMapper
         ~OccupancyGridMapper();
 
         void setLCM(lcm::LCM *lcm_t);
-        
         LaserScan calculateLaserOrigins();
-#ifdef TASK_2
-        LaserScan calculateQuarterLaserOrigins();
-#endif 
-
         void updateGrid(LaserScan scan);
         void publishOccupancyGrid(maebot_pose_t pose);
         
@@ -85,22 +65,12 @@ class OccupancyGridMapper
         bool laserScansEmpty();
         bool posesEmpty();
 
-        // lock/unlock
         void lockMapperMutex();
         void unlockMapperMutex();
         void lockPosesMutex();
         void unlockPosesMutex();
         void lockLaserScansMutex();
         void unlockLaserScansMutex();
-
-#ifdef TASK_2
-        void addMotorFeedback(maebot_motor_feedback_t input_feedback);
-        
-        bool motorFeedbacksEmpty();
-        void lockMotorFeedbacksMutex();
-        void unlockMotorFeedbacksMutex();
-#endif 
-
         void wait();
         void signal();
 };

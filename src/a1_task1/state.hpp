@@ -38,7 +38,8 @@
 
 #include <vector>
 
-struct gui_state {
+//typedef struct state state_t;
+struct state_t {
     bool running;
 
     getopt_t        *gopt;
@@ -70,7 +71,6 @@ struct gui_state {
     // occupancy grid stuff
     eecs467::OccupancyGrid grid;
     std::vector<maebot_pose_t> poses;
-    std::vector<maebot_pose_t> truePoses;
 
     int location_count;
 };

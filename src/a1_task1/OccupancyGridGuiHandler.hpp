@@ -49,9 +49,9 @@ class OccupancyGridGuiHandler
 class LocationHandler
 {
     public:
-        gui_state *state;
-        
-        LocationHandler(gui_state *state_t) : state(state_t) {}
+        state_t *state;
+        LocationHandler(state_t *state_t) : state(state_t) {}
+
         ~LocationHandler(){}
 
         void handlePose(const lcm::ReceiveBuffer *rbuf,
@@ -59,13 +59,6 @@ class LocationHandler
                         const maebot_pose_t *msg)
         {
             state->poses.push_back(*msg);
-        }
-
-        void handleTruePose(const lcm::ReceiveBuffer *rbuf,
-                            const std::string& channel,
-                            const maebot_pose_t *msg)
-        {
-            state->truePoses.push_back(*msg);
         }
 };
 
