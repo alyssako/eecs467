@@ -30,6 +30,7 @@
 #include "eecs467_util.h"    // This is where a lot of the internals live
 
 #include "state.hpp"
+#include "MagicNumbles.hpp"
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridGuiHandler.hpp"
@@ -38,6 +39,7 @@
 #define SCREEN_HEIGHT 500
 
 using namespace std;
+typedef struct gui_state state_t;
 
 // It's good form for every application to keep its state in a struct.
 // Moved to OccupancyGridHandler.hpp 

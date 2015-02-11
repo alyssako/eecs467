@@ -19,21 +19,22 @@
 #include "lcmtypes/maebot_pose_t.hpp"
 #include "lcmtypes/maebot_laser_scan_t.hpp"
 
+#include "MagicNumbers.hpp" 
 #include "ApproxLaser.hpp"
 #include "OccupancyGridMapper.hpp"
 
-class MaebotPoseHandler
+class MaebotLCMHandler
 {
     private:
         OccupancyGridMapper *grid_mapper_;
 
     public:
-        MaebotPoseHandler(OccupancyGridMapper *grid_mapper_t) :
+        MaebotLCMHandler(OccupancyGridMapper *grid_mapper_t) :
             grid_mapper_(grid_mapper_t) { }
         
-        ~MaebotPoseHandler(){}
+        ~MaebotLCMHandler(){}
 
-        void handleMessage(const lcm::ReceiveBuffer *rbuf,
+        void handlePose(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
                            const maebot_pose_t *msg)
         {
@@ -47,32 +48,41 @@ class MaebotPoseHandler
             grid_mapper_->unlockPosesMutex();
             grid_mapper_->unlockMapperMutex();
         }
-};
 
-class MaebotLaserScanHandler
-{
-    private:
-        OccupancyGridMapper *grid_mapper_;
-
-    public:
-        MaebotLaserScanHandler(OccupancyGridMapper *grid_mapper_t) :
-            grid_mapper_(grid_mapper_t) { }
-
-        ~MaebotLaserScanHandler(){}
-
-        void handleMessage(const lcm::ReceiveBuffer *rbuf,
-                           const std::string& channel,
-                           const maebot_laser_scan_t *msg)
+        void handleLaserScan(const lcm::ReceiveBuffer *rbuf,
+                             const std::string& channel,
+                             const maebot_laser_scan_t *msg)
         {
             grid_mapper_->lockLaserScansMutex();
             grid_mapper_->lockMapperMutex();
+
             grid_mapper_->addLaserScan(*msg);
+
+#ifdef TASK_1
             if(!grid_mapper_->posesEmpty())
-            {
                 grid_mapper_->signal();
-            }
+#endif
+#ifdef TASK_2
+            if(!grid_mapper_->motorFeedbacksEmpty())
+                grid_mapper_->signal();
+#endif
+
             grid_mapper_->unlockLaserScansMutex();
             grid_mapper_->unlockMapperMutex();
+        }
+
+        void handleMotorFeedback(const lcm::ReceiveBuffer *rbuf,
+                                 const std::string& channel,
+                                 const maebot_motor_feedback_t *msg)
+        {
+            grid_mapper_->lockMotorFeedbacksMutex();
+            
+            grid_mapper_->addMotorFeedback(*msg);
+      
+            if(!grid_mapper_->laserScansEmpty())
+                grid_mapper_->signal();
+            
+            grid_mapper_->unlockMotorFeedbacksMutex();
         }
 };
 

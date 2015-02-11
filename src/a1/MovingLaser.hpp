@@ -20,8 +20,6 @@
 
 #include "math/angle_functions.hpp"
 
-//#include "OccupancyGridMapper.hpp"
-
 /* store lidar scans and associated poses where they originated */
 struct LaserScan
 {

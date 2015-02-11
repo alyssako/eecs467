@@ -7,6 +7,9 @@ OccupancyGridMapper::OccupancyGridMapper() :
     pthread_mutex_init(&poses_mutex_, NULL);
     pthread_mutex_init(&laser_scans_mutex_, NULL);
     pthread_mutex_init(&mapper_mutex_, NULL);
+#ifdef TASK_2
+    pthread_mutex_init(&motor_feedbacks_mutex_, NULL);
+#endif
     pthread_cond_init(&cv_, NULL);
 }
 
@@ -53,6 +56,61 @@ LaserScan OccupancyGridMapper::calculateLaserOrigins()
 
     return ls;
 }
+
+#ifdef TASK_2
+LaserScan OccupancyGridMapper::calculateQuarterLaserOrigins()
+{ 
+    pthread_mutex_lock(&laser_scans_mutex_);
+    pthread_mutex_lock(&motor_feedbacks_mutex_);
+
+    maebot_motor_feedback_t feedback = motor_feedbacks_.front();
+    motor_feedbacks_.pop();
+    maebot_laser_scan_t laser_scan = laser_scans_.front();
+    if(the odometry is cooresponging to the last quarter of the laser)
+        laser_scans_.pop();
+
+    pthread_mutex_unlock(&laser_scans_mutex_);
+    pthread_mutex_unlock(&poses_mutex_);
+
+    == not done ==
+    relocator.move(feedback);
+
+    double probabilities[1000];
+    vote for particals here 
+        
+    maebot_pose_t pose = highest probability pose
+
+    relocator.resample(probabilities);
+    
+    do something with pose....
+
+    if(!approx_laser_.containsPoses())
+    {
+        approx_laser_.addPose(&pose);
+        LaserScan ls;
+        ls.valid = false;
+        return ls;
+    }
+
+    approx_laser_.addPose(&pose);
+    std::cout << "approx_laser_.poses.size(): " << approx_laser_.posesSize() << std::endl;
+    LaserScanRange lsr = approx_laser_.findPts(&laser_scan);
+    if(lsr.valid == false)
+    {
+        LaserScan ls;
+        ls.valid = false;
+        return ls;
+    }
+
+    LaserScan ls = moving_laser_.findOrigin(lsr);
+
+    LaserScan ls;
+    return ls;
+}
+
+
+
+#endif
 
 void OccupancyGridMapper::updateGrid(LaserScan scan)
 {
@@ -174,6 +232,28 @@ void OccupancyGridMapper::unlockMapperMutex()
 {
     pthread_mutex_unlock(&mapper_mutex_);
 }
+
+#ifdef TASK_2
+void OccupancyGridMapper::addMotorFeedback(maebot_motor_feedback_t input_feedback)
+{
+    motor_feedbacks_.push(input_feedback);
+}
+
+bool OccupancyGridMapper::motorFeedbacksEmpty()
+{
+    return motor_feedbacks_.empty();
+}
+
+void OccupancyGridMapper::lockMotorFeedbacksMutex()
+{
+    pthread_mutex_lock(&motor_feedbacks_mutex_);
+}
+
+void OccupancyGridMapper::unlockMotorFeedbacksMutex()
+{
+    pthread_mutex_unlock(&motor_feedbacks_mutex_);
+}
+#endif 
 
 void OccupancyGridMapper::wait()
 {
