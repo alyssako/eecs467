@@ -168,17 +168,25 @@ animate_thread (void *data)
             truePoints.push_back(state->truePoses[i].y/state->grid.metersPerCell());
             truePoints.push_back(0.001f);
         }
+        
+        std::vector<float> particlePoints;
+        for(unsigned int i = 0; i < state->particles.size(); i++)
+        {
+            particlePoints.push_back(state->particles[i].x/state->grid.metersPerCell());
+            particlePoints.push_back(state->particles[i].y/state->grid.metersPerCell());
+            particlePoints.push_back(0.001f);
+        }
 
         vx_resc_t *verts = vx_resc_copyf(&points[0], points.size());
         vx_resc_t *trueVerts = vx_resc_copyf(&truePoints[0], truePoints.size());
+        vx_resc_t *particleVerts = vx_resc_copyf(&particlePoints[0], particlePoints.size());
 
         vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
-                                       vxo_points(verts, state->poses.size(), vxo_points_style(vx_blue, 2.0f))));
-        vx_buffer_add_back (buff,
-                            vxo_chain (mat_scale,
-                                       vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_red, 2.0f))));
+                                       vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_red, 2.0f)),
+                                       vxo_points(verts, state->poses.size(), vxo_points_style(vx_green, 2.0f)),
+                                       vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_blue, 2.0f))));
 
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points"));
