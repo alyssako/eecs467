@@ -67,6 +67,13 @@ class LocationHandler
         {
             state->truePoses.push_back(*msg);
         }
+        
+        void handleParticles(const lcm::ReceiveBuffer *rbuf,
+                            const std::string& channel,
+                            const maebot_pose_t *msg)
+        {
+            state->particles.push_back(*msg);
+        }
 };
 
 #endif
