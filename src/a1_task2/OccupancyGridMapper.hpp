@@ -53,7 +53,7 @@ class OccupancyGridMapper
         ~OccupancyGridMapper();
 
         void setLCM(lcm::LCM *lcm_t);
-        void setLogOdds(int x, int y, double logOdds);
+        void setLogOddsMapper(int x, int y, double logOdds);
         
         LaserScan calculateLaserOrigins();
 

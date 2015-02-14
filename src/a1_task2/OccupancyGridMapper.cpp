@@ -27,13 +27,9 @@ void OccupancyGridMapper::setLCM(lcm::LCM *lcm_t){
     lcm = lcm_t;
 }
 
-void OccupancyGridMapper::setLogOdds(int x, int y, double logOdds)
+void OccupancyGridMapper::setLogOddsMapper(int x, int y, double logOdds)
 {
     occupancy_grid_(x, y) = logOdds;
-}
-
-void OccupancyGridMapper::setLogOdds(int x, int y, double logOdds)
-{
 }
 
 LaserScan OccupancyGridMapper::calculateLaserOrigins()

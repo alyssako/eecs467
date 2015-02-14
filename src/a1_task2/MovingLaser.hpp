@@ -36,6 +36,8 @@ struct LaserScanRange
     maebot_pose_t start_pose;
     maebot_pose_t end_pose;
     maebot_laser_scan_t scan;
+    LaserScanRange(bool valid_, maebot_pose_t start, maebot_pose_t end, maebot_laser_scan_t scan_t)
+        : valid(valid_), start_pose(start), end_pose(end), scan(scan_t) {}
 };
 
 /* functor that figure out where each individual laser originated from */

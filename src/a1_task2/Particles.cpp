@@ -3,10 +3,7 @@
 Particles::Particles()
 {
     // construct random environment
-    const gsl_rng_type *T;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    r = gsl_rng_alloc(T);
+    r = gslu_rand_rng_alloc();
 
     // construct individual particles
     Particle particle = {0, 0, 0, 0.001};
@@ -31,12 +28,12 @@ maebot_pose_t Particles::toPose(int index)
     return retval;
 }
 
-maebot_pose_t Particles::mostLikely()
+maebot_pose_t Particles::mostProbable()
 {
     maebot_pose_t retval;
     retval.x = most_likely_.x;
     retval.y = most_likely_.y;
-    retval.theta = most_likely.theta;
+    retval.theta = most_likely_.theta;
     return retval;
 }
 
@@ -56,15 +53,15 @@ void Particles::moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange *lsr, fl
 
     for(int i = 0; i < NUM_PARTICLES; i++)
     {
-        moveRandomSingle(grid, *lsr, delta_s, alpha, theta_alpha, i, r);
+        moveRandomSingle(grid, *lsr, delta_s, alpha, theta_alpha, i);
     }
 }
 
 void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index)
 {
-    double new_delta_s = gslu_rnd_gaussian(r, delta_s, 0.1*delta_s);
-    double new_delta_alpha = gslu_rnd_gaussian(r, alpha, 0.1*alpha);
-    double new_delta_theta_alpha = gslu_rnd_gaussian(r, theta_alpha, 0.1*theta_alpha);
+    double new_delta_s = gslu_rand_gaussian(r, delta_s, 0.1*delta_s);
+    double new_delta_alpha = gslu_rand_gaussian(r, alpha, 0.1*alpha);
+    double new_delta_theta_alpha = gslu_rand_gaussian(r, theta_alpha, 0.1*theta_alpha);
 
     laser_scan_range.start_pose = toPose(index);
 
@@ -101,7 +98,7 @@ void Particles::calculateProbabilitySingle(eecs467::OccupancyGrid *grid, LaserSc
 {
     MovingLaser ml;
     LaserScan ls = ml.findOrigin(*scan);
-    for(int i = 0; i < ls.origins.size(); i++)
+    for(uint i = 0; i < ls.origins.size(); i++)
     {
         auto a = ls.scan.thetas[i] - ls.origins[i].theta;
         auto x = ls.origins[i].x + ls.scan.ranges[i] * cos(a);
@@ -124,7 +121,7 @@ void Particles::calculateProbabilitySingle(eecs467::OccupancyGrid *grid, LaserSc
 
 void Particles::normalizeProbabilities()
 {
-    index_max = findLargestProbability();
+    int index_max = findLargestProbability();
     subtractProbabilities(particles_[index_max].probability);
     exponentiate();
     float sum = sumProbabilities();
@@ -143,7 +140,7 @@ void Particles::subtractProbabilities(float max)
 {
     for(int i = 0; i < NUM_PARTICLES; i++)
     {
-        particles_[i] -= max;
+        particles_[i].probability -= max;
     }
 
     return;
@@ -183,7 +180,7 @@ void Particles::resample()
     // write own functor for comparing probs
     comp comparator;
     std::sort(particles_.begin(), particles_.end(), comparator);
-    double increment = 1f/NUM_PARTICLES;
+    double increment = 1.0/NUM_PARTICLES;
     std::vector<Particle> resampled;
     resampled.resize(NUM_PARTICLES);
     for(double i = 0, index = 0, newvecindex = 0; i < 1; i+= increment, newvecindex++)
@@ -206,7 +203,7 @@ void Particles::resample()
 
 /* find position of laser scan and positions of individual laser beams within scan */
 
-LaserScanRange Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::deque<maebot_pose_t>& poses)
+LaserScanRange Particles::getLaserScan(maebot_pose_t *poseA, maebot_laser_scan_t *scanB, std::deque<maebot_pose_t>& poses)
 {
     std::vector<maebot_pose_t> mB = findLeftRightPoses(scanB->utime, poses);
     if(mB.size() < 2)
@@ -214,7 +211,7 @@ LaserScanRange Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scan
     MovingLaser moving_laser;
     
     // find the pose of the last laser scan
-    maebot_pose_t poseB = moving_laser->findOriginSingle(scanB->utime, mB[0], mB[1]);
+    maebot_pose_t poseB = moving_laser.findOriginSingle(scanB->utime, mB[0], mB[1]);
     
     LaserScanRange lsr(true, *poseA, poseB, *scanB);
     return lsr;
@@ -225,9 +222,9 @@ std::vector<maebot_pose_t> Particles::findLeftRightPoses(int64_t time, std::dequ
     std::vector<maebot_pose_t> m;
     for(std::deque<maebot_pose_t>::iterator it = poses.begin(); it != poses.end(); it++)
     {
-        if(poses[i].utime > time)
+        if(it->utime > time)
         {
-            if(i-1 < 0)
+            if(it-1 < poses.begin())
                 m.push_back(*it);
             else
                 m.push_back(*(it-1));

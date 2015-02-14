@@ -7,7 +7,8 @@ CXXFLAGS = $(CXXFLAGS_STD) \
 	$(CFLAGS_MATH) \
 	$(CFLAGS_COMMON) \
 	$(CFLAGS_LCMTYPES) \
-    -O2
+	$(CFLAGS_GSL) \
+    -g
 
 CFLAGS = $(CFLAGS_STD) \
 	$(CFLAGS_VX_GTK) \
@@ -15,7 +16,8 @@ CFLAGS = $(CFLAGS_STD) \
 	$(CFLAGS_MATH) \
 	$(CFLAGS_COMMON) \
 	$(CFLAGS_LCMTYPES) \
-    -O2
+	$(CFLAGS_GSL) \
+    -g
 
 LDFLAGS = $(LDFLAGS_STD) \
 	  $(LDFLAGS_VX_GL) \
@@ -29,7 +31,8 @@ LDFLAGS = $(LDFLAGS_STD) \
 	  $(LDFLAGS_USB) \
 	  $(LDFLAGS_PNG) \
 	  $(LDFLAGS_DC1394) \
-      $(LDFLAGS_MAPPING)
+	  $(LDFLAGS_MAPPING) \
+      $(LDFLAGS_GSL)
 
 LIBDEPS = $(call libdeps, $(LDFLAGS))
 LIB_VXGTK = $(LIB_PATH)/libvxgtk.a
@@ -55,9 +58,17 @@ $(LIB_EECS467): $(LIBEECS467_OBJS) $(LIBDEPS)
 	@echo "\t$@"
 	@ar rc $@ $(LIBEECS467_OBJS)
 
+$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o Particles.o Slam.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
 $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_VXGL) $(LIB_VX)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
+
+$(BIN_EECS467_PARTICLES): Particles.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_EECS467_MOVING_LASER): MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
@@ -71,15 +82,7 @@ $(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o ApproxLaser.o Moving
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
-$(BIN_EECS467_PARTICLES): particles.o $(LIB_EECE467) $(LIBDEPS)
-	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS)
-
-$(BIN_EECS467_SLAM): slam.o particles.o $(LIB_EECE467) $(LIBDEPS)
-	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS)
-
-$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o particles.o slam.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_SLAM): Slam.o Particles.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
