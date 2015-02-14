@@ -30,7 +30,7 @@
 #include "eecs467_util.h"    // This is where a lot of the internals live
 
 #include "state.hpp"
-#include "MagicNumbles.hpp"
+#include "MagicNumbers.hpp"
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridGuiHandler.hpp"
@@ -39,7 +39,7 @@
 #define SCREEN_HEIGHT 500
 
 using namespace std;
-typedef struct gui_state state_t;
+typedef gui_state state_t;
 
 // It's good form for every application to keep its state in a struct.
 // Moved to OccupancyGridHandler.hpp 
@@ -162,7 +162,7 @@ animate_thread (void *data)
         }
         
         std::vector<float> truePoints;
-        for(unsigned int i = 0; i < state->turePoses.size(); i++)
+        for(unsigned int i = 0; i < state->truePoses.size(); i++)
         {
             truePoints.push_back(state->truePoses[i].x/state->grid.metersPerCell());
             truePoints.push_back(state->truePoses[i].y/state->grid.metersPerCell());
@@ -269,7 +269,7 @@ main (int argc, char *argv[])
             &LocationHandler::handleTruePose,
             &location_handler);
     state->lcm->subscribe("MAEBOT_PARTICLE_GUI", 
-            &LocationHandler::handlepParticle,
+            &LocationHandler::handleParticles,
             &location_handler);
 
     // Parse arguments from the command line, showing the help
