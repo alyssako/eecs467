@@ -132,13 +132,14 @@ animate_thread (void *data)
     while (state->running) 
     {
 		//cout << "Animate Thread!" << endl;
+        std::cout << state->grid.widthInCells() << ", " << state->grid.heightInCells() << std::endl;
 		image_u32_t *im = image_u32_create(state->grid.widthInCells(), state->grid.heightInCells());
 		for(int y = 0; y < im->height; y++)
 		{
 			for(int x = 0; x < im->width; x++)
 			{
 				int a = 255; //alpha transparency value.
-                std::cout << "(" << x << "," << y << ")\n";
+                //std::cout << "(" << x << "," << y << ")\n";
 				int v = 255 - to_grayscale(state->grid.logOdds(x, y));
 				im->buf[(im->height-1-y)*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
 			}
@@ -147,7 +148,7 @@ animate_thread (void *data)
         const double scale = 1./im->width;
 
         auto mat_scale = vxo_mat_scale3(scale, scale, 1.0);
-        vxo_mat_translate3(-im->width/2., -im->height/2., 0.);
+        //vxo_mat_translate3(-im->width/2., -im->height/2., 0.);
 
         pthread_mutex_lock(&state->gui_mutex);
         vx_buffer_add_back (vx_world_get_buffer (state->vxworld, "bitmap"),
