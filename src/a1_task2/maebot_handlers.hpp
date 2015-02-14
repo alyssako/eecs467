@@ -22,6 +22,7 @@
 #include "MagicNumbers.hpp" 
 #include "ApproxLaser.hpp"
 #include "OccupancyGridMapper.hpp"
+#include "Slam.hpp"
 
 class MaebotLCMHandler
 {
@@ -77,7 +78,7 @@ class MaebotLCMHandler
                                  const std::string& channel,
                                  const maebot_motor_feedback_t *msg)
         {
-            slam->addMotorFeedback(*msg);
+            slam_->addMotorFeedback(*msg);
         }
 };
 

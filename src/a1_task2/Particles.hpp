@@ -27,6 +27,7 @@
 #include "mapping/occupancy_grid_utils.hpp"
 #include "ApproxLaser.hpp"
 #include "MagicNumbers.hpp"
+#include "MovingLaser.hpp"
 
 #include "math/point.hpp"
 #include "math/gsl_util_rand.h"
@@ -54,15 +55,15 @@ class Particles
         Particles();
         ~Particles();
         maebot_pose_t toPose(int index);
-        maebot_pose_t mostProbable() { return toPose(most_likely_); }
+        maebot_pose_t mostProbable();
         
-        void updateParticles(float delta_x, float delta_y, float delta_theta, eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *scan);
+        void updateParticles(float delta_x, float delta_y, float delta_theta, eecs467::OccupancyGrid *grid, LaserScanRange *scan);
 
-        void moveRandom(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *lsr, float mean_x, float mean_y, float mean_theta);
-        void moveRandomSingle(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index);
+        void moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange *lsr, float mean_x, float mean_y, float mean_theta);
+        void moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index);
 
         //void calculateProbability(occupancy_grid_t *grid, maebot_laser_scan_t *scan);
-        void calculateProbabilitySingle(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *scan, int index);
+        void calculateProbabilitySingle(eecs467::OccupancyGrid *grid, LaserScanRange *scan, int index);
         void rotateParticle(double theta, int index);
         void moveParticle(double s, int index);
 
@@ -75,7 +76,7 @@ class Particles
         
         void resample();
         
-        MovingLaser::LaserScanRange getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::deque<maebot_pose_t>& poses);
+        LaserScanRange getLaserScan(maebot_pose_t *poseA, maebot_laser_scan_t *scanB, std::deque<maebot_pose_t>& poses);
         std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::deque<maebot_pose_t>& poses);
 };
 

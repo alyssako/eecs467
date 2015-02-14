@@ -31,7 +31,16 @@ maebot_pose_t Particles::toPose(int index)
     return retval;
 }
 
-void Particles::updateParticles(float delta_x, float delta_y, float delta_theta, eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *scan)
+maebot_pose_t Particles::mostLikely()
+{
+    maebot_pose_t retval;
+    retval.x = most_likely_.x;
+    retval.y = most_likely_.y;
+    retval.theta = most_likely.theta;
+    return retval;
+}
+
+void Particles::updateParticles(float delta_x, float delta_y, float delta_theta, eecs467::OccupancyGrid *grid, LaserScanRange *scan)
 {
     moveRandom(grid, scan, delta_x, delta_y, delta_theta);
     normalizeProbabilities();
@@ -39,7 +48,7 @@ void Particles::updateParticles(float delta_x, float delta_y, float delta_theta,
     most_likely_ = particles_[findLargestProbability()];
 }
 
-void Particles::moveRandom(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *lsr, float delta_x, float delta_y, float delta_theta)
+void Particles::moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange *lsr, float delta_x, float delta_y, float delta_theta)
 {
     double delta_s = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
     double alpha = eecs467::wrap_to_2pi(eecs467::angle_diff(eecs467::wrap_to_2pi(atan2(delta_y, delta_x)), eecs467::wrap_to_2pi(delta_theta)));
@@ -51,7 +60,7 @@ void Particles::moveRandom(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanR
     }
 }
 
-void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index)
+void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index)
 {
     double new_delta_s = gslu_rnd_gaussian(r, delta_s, 0.1*delta_s);
     double new_delta_alpha = gslu_rnd_gaussian(r, alpha, 0.1*alpha);
@@ -88,10 +97,10 @@ void Particles::moveParticle(double s, int index)
     }
 }*/
 
-void Particles::calculateProbabilitySingle(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *scan, int index)
+void Particles::calculateProbabilitySingle(eecs467::OccupancyGrid *grid, LaserScanRange *scan, int index)
 {
     MovingLaser ml;
-    MovingLaser::LaserScan ls = ml.findOrigin(*scan);
+    LaserScan ls = ml.findOrigin(*scan);
     for(int i = 0; i < ls.origins.size(); i++)
     {
         auto a = ls.scan.thetas[i] - ls.origins[i].theta;
@@ -197,7 +206,7 @@ void Particles::resample()
 
 /* find position of laser scan and positions of individual laser beams within scan */
 
-MovingLaser::LaserScanRange Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::deque<maebot_pose_t>& poses)
+LaserScanRange Particles::getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::deque<maebot_pose_t>& poses)
 {
     std::vector<maebot_pose_t> mB = findLeftRightPoses(scanB->utime, poses);
     if(mB.size() < 2)
@@ -207,7 +216,7 @@ MovingLaser::LaserScanRange Particles::getLaserScan(maebot_pose_t *poseA, maebot
     // find the pose of the last laser scan
     maebot_pose_t poseB = moving_laser->findOriginSingle(scanB->utime, mB[0], mB[1]);
     
-    MovingLaser::LaserScanRange lsr(true, *poseA, poseB, *scanB);
+    LaserScanRange lsr(true, *poseA, poseB, *scanB);
     return lsr;
 }
 

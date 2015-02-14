@@ -59,7 +59,7 @@ $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_V
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
-$(BIN_EECS467_MOVING_LASER): MovingLaser.o OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_MOVING_LASER): MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
@@ -67,11 +67,19 @@ $(BIN_EECS467_APPROX_LASER): ApproxLaser.o MovingLaser.o $(LIB_EECE467) $(LIBDEP
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
-$(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o ApproxLaser.o MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
-$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_PARTICLES): particles.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_SLAM): slam.o particles.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o particles.o slam.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
