@@ -26,6 +26,7 @@
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "ApproxLaser.hpp"
+#include "MagicNumbers.hpp"
 
 #include "math/point.hpp"
 #include "math/gsl_util_rand.h"
@@ -36,39 +37,46 @@ struct Particle
     float y;
     float theta;
     float probability;
-}; 
+};
 
-#define NUM_PARTICLES 1000
+struct comp
+{
+    bool operator()(Particle a, Particle b) { return a.probability < b.probability; }
+};
 
 class Particles
 {
     private:
         std::vector<Particle> particles_;
         Particle most_likely_;
+        gsl_rng *r;
     public:
         Particles();
         ~Particles();
         maebot_pose_t toPose(int index);
+        maebot_pose_t mostProbable() { return toPose(most_likely_); }
         
-        void moveRandom(float mean_x, float mean_y, float mean_theta, float stddev_x, float stddev_y, float stddev_theta);
-        void moveRandomSingle(double delta_s, double alpha, double theta_alpha, int index);
+        void updateParticles(float delta_x, float delta_y, float delta_theta, eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *scan);
 
-        void calculateProbability(occupancy_grid_t *grid, maebot_laser_scan_t *scan);
-        void calculateProbabilitySingle(occupancy_grid_t *grid, maebot_laser_scan_t *scan, int index);
+        void moveRandom(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *lsr, float mean_x, float mean_y, float mean_theta);
+        void moveRandomSingle(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index);
+
+        //void calculateProbability(occupancy_grid_t *grid, maebot_laser_scan_t *scan);
+        void calculateProbabilitySingle(eecs467::OccupancyGrid *grid, MovingLaser::LaserScanRange *scan, int index);
         void rotateParticle(double theta, int index);
         void moveParticle(double s, int index);
 
         void normalizeProbabilities();
         void exponentiate();
         void subtractProbabilities(float max);
-        float findLargestProbability();
+        int findLargestProbability();
         float sumProbabilities();
-        void divideProbabilities();
+        void divideProbabilities(float sum);
         
         void resample();
         
-        MovingLaser::LaserScan getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::vector<maebot_pose_t> poses, MovingLaser *moving_laser)
-        std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::deque<maebot_pose_t> poses)
+        MovingLaser::LaserScanRange getLaserScan(maebot_pose_t *poseA, maebot_scan_t *scanB, std::deque<maebot_pose_t>& poses);
+        std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::deque<maebot_pose_t>& poses);
 };
 
 #endif

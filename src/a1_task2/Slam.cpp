@@ -8,16 +8,40 @@ Slam::Slam(OccupancyGridMapper *gm) :
     pthread_mutex_init(&poses_mutex_, NULL);
     pthread_mutex_init(&slam_mutex_, NULL);
     pthread_cond_init(&cv_, NULL);
-    pthread_mutex_init(&grid_mutex_, NULL);
-    pthread_cond_init(&grid_cv_, NULL);
+    pthread_mutex_init(&scans_mutex_, NULL);
 
     left_prev_dist = -1;
     right_prev_dist = -1;
-    origin.x = 0;
-    origin.y = 0;
-    origin.theta = 0;
+    origin.x = prev_pose.x = 0;
+    origin.y = prev_pose.y = 0;
+    origin.theta = prev_pose.theta = 0;
     poses_.push_front(origin);
 }
+
+~Slam::Slam()
+{
+}
+
+void Slam::setLCM(lcm::LCM lcm_t) :
+    lcm(lcm_t)
+{
+}
+
+bool Slam::posesEmpty()
+{
+    return poses_.empty();
+}
+
+void Slam::lockPosesMutex()
+{
+    pthread_mutex_lock(&poses_mutex_);
+}
+
+void Slam::unlockPosesMutex()
+{
+    pthread_mutex_unlock(&poses_mutex_);
+}
+
 void Slam::addMotorFeedback(maebot_motor_feedback_t input_feedback)
 {
     if(left_prev_dist == -1 || right_prev_dist == -1)
@@ -26,31 +50,23 @@ void Slam::addMotorFeedback(maebot_motor_feedback_t input_feedback)
         right_prev_dist = input_feedback.encoder_right_ticks * TICKS_TO_DIST;
         return;
     }
-    pthread_mutex_lock(&delta_poses_mutex_);
-    addDelta(input_feedback.encoder_left_ticks, input_feedback.encoder_right_ticks);
+    pthread_mutex_lock(&poses_mutex_);
+    addPose(input_feedback.encoder_left_ticks, input_feedback.encoder_right_ticks);
     if(poses_.size() > POSES_SIZE)
     {
         poses_.pop_back();
     }
-    pthread_mutex_unlock(&delta_poses_mutex_);
+    pthread_mutex_unlock(&poses_mutex_);
 }
 
-bool Slam::posesEmpty()
+void Slam::addScan(maebot_laser_scan_t laser_scan)
 {
-    return delta_poses_.empty();
+    pthread_mutex_lock(&scans_mutex_);
+    scans_push(laser_scan);
+    pthread_mutex_unlock(&scans_mutex_);
 }
 
-void Slam::lockPosesMutex()
-{
-    pthread_mutex_lock(&delta_poses_mutex_);
-}
-
-void Slam::unlockPosesMutex()
-{
-    pthread_mutex_unlock(&delta_poses_mutex_);
-}
-
-maebot_pose_t Slam::addDelta(float left_ticks, float right_ticks)
+void Slam::addPose(float left_ticks, float right_ticks)
 {
 
     //update the distance traveled since last timestep
@@ -79,6 +95,26 @@ maebot_pose_t Slam::addDelta(float left_ticks, float right_ticks)
     poses_.push_front(m);
 }
 
+void Slam::updateParticles()
+{
+    pthread_mutex_lock(&scans_mutex_);
+    maebot_laser_scan_t nextScan = scans_.front();
+    scans_.pop();
+    pthread_mutex_unlock(&scans_mutex_);
+
+    pthread_mutex_lock(&poses_mutex_);
+    LaserScanRange lsr = particles_.getLaserScan(&prev_pose, nextScan, poses_);
+    pthread_mutex_unlock(&poses_mutex_);
+
+    double delta_x = lsr.end_pose.x - prev_pose.x;
+    double delta_y = lsr.end_pose.y - prev_pose.y;
+    double delta_theta = eecs467::wrap_to_2pi(eecs467::angle_diff(lsr.end_pose.theta, prev_pose.theta));
+    prev_pose.x = lsr.end_pose.x;
+    prev_pose.y = lsr.end_pose.y;
+    prev_pose.theta = lsr.end_pose.theta;
+    particles_.updateParticles(delta_x, delta_y, delta_theta, &grid_mapper_->getOccupancyGrid(), &next_scan);
+}
+
 void Slam::publish()
 {
     for(int i = 0; i < NUM_PARTICLES; i++)
@@ -86,5 +122,31 @@ void Slam::publish()
         maebot_pose_t pose = particles_.toPose(i);
         lcm->publish("MAEBOT_PARTICLE_GUI", &pose);
     }
+    lcm->publish("MAEBOT_POSE_GUI", &particles_.mostProbable());
     std::cout << "sent\n";
+}
+
+bool Slam::scanReceived()
+{
+    return scan_received_;
+}
+
+void Slam::lockSlamMutex()
+{
+    pthread_mutex_lock(&slam_mutex_);
+}
+
+void Slam::unlockSlamMutex()
+{
+    pthread_mutex_unlock(&slam_mutex_);
+}
+
+void Slam::signal()
+{
+    pthread_cond_signal(&cv_);
+}
+
+void Slam::wait()
+{
+    pthread_cond_wait(&cv_, &slam_mutex_);
 }

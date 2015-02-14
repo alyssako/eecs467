@@ -8,6 +8,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include <signal.h>
 #include <string>
+#include <fstream>
 #include <vector>
 #include <queue>
 #include <iostream>
@@ -48,9 +49,11 @@ class OccupancyGridMapper
 
     public:
         OccupancyGridMapper();
+        OccupancyGridMapper(int height, int width, double cellSize);
         ~OccupancyGridMapper();
 
         void setLCM(lcm::LCM *lcm_t);
+        void setLogOdds(int x, int y, double logOdds);
         
         LaserScan calculateLaserOrigins();
 
@@ -64,7 +67,7 @@ class OccupancyGridMapper
         void addPose(maebot_pose_t input_pose);
         ApproxLaser getApproxLaser();
         MovingLaser getMovingLaser();
-        eecs467::OccupancyGrid getOccupancyGrid();
+        eecs467::OccupancyGrid& getOccupancyGrid();
 
         bool laserScansEmpty();
         bool posesEmpty();

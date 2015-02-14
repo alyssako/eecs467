@@ -67,8 +67,8 @@ struct state
     lcm::LCM *lcm;
     pthread_mutex_t lcm_mutex;
 
-    OccupancyGridMapper grid_mapper;
-    Slam slam;
+    OccupancyGridMapper *grid_mapper;
+    Slam *slam;
 };
 
 static int verbose = 0;
@@ -173,25 +173,31 @@ static void* update_map(void *data)
     {
         if(task2)
         {
-            state->slam.gridMutexLock();
-            while(!state->slam.gridInitialized())
+            state->slam->lockSlamMutex();
+            while(!state->slam->scanReceived())
             {
-                state->slam.gridCVWait();
+                state->slam->wait();
             }
-            state->slam.gridMutexUnlock();
+            state->slam->unlockSlamMutex();
+
+            state->slam->updateParticles();
+            state->slam->publish();
         }
-        state->grid_mapper.lockMapperMutex();
+        else if(task1)
+        {
+            state->grid_mapper.lockMapperMutex();
 
-        while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())        
-            state->grid_mapper.wait();
-        state->grid_mapper.unlockMapperMutex();
-        std::cout << "received message" << std::endl;
+            while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())        
+                state->grid_mapper.wait();
+            state->grid_mapper.unlockMapperMutex();
+            std::cout << "received message" << std::endl;
 
-        LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
-        if(!updated_scan.valid) continue;
+            LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
+            if(!updated_scan.valid) continue;
 
-        state->grid_mapper.updateGrid(updated_scan);
-        state->grid_mapper.publishOccupancyGrid(updated_scan.end_pose);
+            state->grid_mapper.updateGrid(updated_scan);
+            state->grid_mapper.publishOccupancyGrid(updated_scan.end_pose);
+        }
     }
     return NULL;
 }
@@ -214,7 +220,30 @@ int main(int argc, char **argv)
     pthread_mutex_init(&state->lcm_mutex, NULL);
     pthread_mutex_init(&state->render_mutex, NULL);
 
-    state->grid_mapper.setLCM(state->lcm);
+    if(TASK2)
+    {
+        // TODO: change filename
+        ifstream input("filename.txt");
+        int width, height;
+        double metersPerCell, logodds;
+        input >> width >> height >> metersPerCell;
+        state->grid_mapper = new OccupancyGridMapper(width, height, metersPerCell);
+        for(int x = 0; x < height; x++)
+        {
+            for(int y = 0; y < width; y++)
+            {
+                input >> logodds;
+                state->grid_mapper->setLogOdds(x, y, logOdds);
+            }
+        }
+    }
+    else
+    {
+        state->grid_mapper = new OccupancyGridMapper;
+    }
+    state->slam = new Slam(state->grid_mapper);
+    state->grid_mapper->setLCM(state->lcm);
+    state->slam->setLCM(state->lcm);
     // === End =============================================
 
     // Clean up on Ctrl+C
@@ -241,16 +270,13 @@ int main(int argc, char **argv)
             &MaebotLCMHandler::handleLaserScan,
             &lcm_handler);
 
-#ifdef TASK_1 
     state->lcm->subscribe("MAEBOT_POSE",
             &MaebotLCMHandler::handlePose,
             &lcm_handler);
-#endif
-#ifdef TASK_2
+
     state->lcm->subscribe("MAEBOT_MOTOR_FEEDBACK",
             &MaebotLCMHandler::handleMotorFeedback,
             &lcm_handler);
-#endif
 
     std::cout << "listening" << std::endl;
 

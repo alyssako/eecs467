@@ -27,6 +27,7 @@ class MaebotLCMHandler
 {
     private:
         OccupancyGridMapper *grid_mapper_;
+        Slam *slam_;
 
     public:
         MaebotLCMHandler(OccupancyGridMapper *grid_mapper_t) :
@@ -53,36 +54,30 @@ class MaebotLCMHandler
                              const std::string& channel,
                              const maebot_laser_scan_t *msg)
         {
-            grid_mapper_->lockLaserScansMutex();
-            grid_mapper_->lockMapperMutex();
+            if(task1)
+            {
+                grid_mapper_->lockLaserScansMutex();
+                grid_mapper_->lockMapperMutex();
 
-            grid_mapper_->addLaserScan(*msg);
+                grid_mapper_->addLaserScan(*msg);
+                if(!grid_mapper_->posesEmpty())
+                    grid_mapper_->signal();
 
-#ifdef TASK_1
-            if(!grid_mapper_->posesEmpty())
-                grid_mapper_->signal();
-#endif
-#ifdef TASK_2
-            if(!grid_mapper_->motorFeedbacksEmpty())
-                grid_mapper_->signal();
-#endif
+                grid_mapper_->unlockLaserScansMutex();
+                grid_mapper_->unlockMapperMutex();
 
-            grid_mapper_->unlockLaserScansMutex();
-            grid_mapper_->unlockMapperMutex();
+            }
+            else if(task2)
+            {
+                slam_->addScan(*msg);
+            }
         }
 
         void handleMotorFeedback(const lcm::ReceiveBuffer *rbuf,
                                  const std::string& channel,
                                  const maebot_motor_feedback_t *msg)
         {
-            grid_mapper_->lockMotorFeedbacksMutex();
-            
-            grid_mapper_->addMotorFeedback(*msg);
-      
-            if(!grid_mapper_->laserScansEmpty())
-                grid_mapper_->signal();
-            
-            grid_mapper_->unlockMotorFeedbacksMutex();
+            slam->addMotorFeedback(*msg);
         }
 };
 

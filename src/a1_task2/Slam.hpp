@@ -31,11 +31,6 @@
 #include "math/point.hpp"
 #include "MagicNumbers.hpp"
 
-// (0.032 * 3.14)/480.0
-#define TICKS_TO_DIST 0.00020933
-
-#define POSES_SIZE 20
-
 class Slam
 {
     private:
@@ -45,34 +40,38 @@ class Slam
         std::deque<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
 
+        std::queue<maebot_laser_scan_t> scans_;
+        pthread_mutex_t scans_mutex_;
+
         pthread_mutex_t slam_mutex_;
         pthread_cond_t cv_;
         bool scan_received_;
-
-        pthread_mutex_t grid_mutex_;
-        pthread_cond_t grid_cv_;
-        bool grid_initialized_;
 
         lcm::LCM *lcm;
 
         float left_prev_dist;
         float right_prev_dist;
+        maebot_pose_t prev_pose;
         maebot_pose_t origin;
 
+        void addPose(float left_ticks, float right_ticks);
     public:
-        Slam() : grid_mapper_(gm) {
-            slam_muex
-        }
-        ~Slam() {}
+        Slam(OccupancyGridMapper *gm);
+        ~Slam();
 
-        void setLCM(lcm::LCM *lcm_t) : lcm(lcm_t) { }
+        void setLCM(lcm::LCM *lcm_t);
         void addMotorFeedback(maebot_motor_feedback_t input_feedback);
+        void updateParticles();
+        void addScan(maebot_laser_scan_t scan);
+        void publish();
         
         bool posesEmpty();
-        void lockPosesMutex();
-        void unlockPosesMutex();
-        maebot_pose_t getDelta(float left_ticks, float right_ticks);
-        void publish();
+        bool scanReceived();
+        
+        void lockSlamMutex();
+        void unlockSlamMutex();
+        void signal();
+        void wait();
 };
 
 #endif

@@ -10,12 +10,30 @@ OccupancyGridMapper::OccupancyGridMapper() :
     pthread_cond_init(&cv_, NULL);
 }
 
+OccupancyGridMapper::OccupancyGridMapper(int height, int width, double cellSize) :
+    occupancy_grid_(width, height, cellSize)
+{
+    pthread_mutex_init(&poses_mutex_, NULL);
+    pthread_mutex_init(&laser_scans_mutex_, NULL);
+    pthread_mutex_init(&mapper_mutex_, NULL);
+    pthread_cond_init(&cv_, NULL);
+}
+
 OccupancyGridMapper::~OccupancyGridMapper()
 {
 }
 
 void OccupancyGridMapper::setLCM(lcm::LCM *lcm_t){
     lcm = lcm_t;
+}
+
+void OccupancyGridMapper::setLogOdds(int x, int y, double logOdds)
+{
+    occupancy_grid_(x, y) = logOdds;
+}
+
+void OccupancyGridMapper::setLogOdds(int x, int y, double logOdds)
+{
 }
 
 LaserScan OccupancyGridMapper::calculateLaserOrigins()
@@ -131,7 +149,7 @@ MovingLaser OccupancyGridMapper::getMovingLaser() {
     return moving_laser_;
 }
 
-eecs467::OccupancyGrid OccupancyGridMapper::getOccupancyGrid() {
+eecs467::OccupancyGrid& OccupancyGridMapper::getOccupancyGrid() {
     return occupancy_grid_;
 }
 
