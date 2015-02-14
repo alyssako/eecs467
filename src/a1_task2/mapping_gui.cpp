@@ -6,6 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include <vector>
+#include <iostream>
 #include <lcm/lcm-cpp.hpp>
 
 // core api
@@ -137,6 +138,7 @@ animate_thread (void *data)
 			for(int x = 0; x < im->width; x++)
 			{
 				int a = 255; //alpha transparency value.
+                std::cout << "(" << x << "," << y << ")\n";
 				int v = 255 - to_grayscale(state->grid.logOdds(x, y));
 				im->buf[(im->height-1-y)*im->stride+x] = (a<<24) + (v<<16) + (v<<8) + (v<<0);
 			}
@@ -158,7 +160,7 @@ animate_thread (void *data)
         {
             points.push_back(state->poses[i].x/state->grid.metersPerCell());
             points.push_back(state->poses[i].y/state->grid.metersPerCell());
-            points.push_back(0.001f);
+            points.push_back(0.011f);
         }
         
         std::vector<float> truePoints;
@@ -168,6 +170,7 @@ animate_thread (void *data)
             truePoints.push_back(state->truePoses[i].y/state->grid.metersPerCell());
             truePoints.push_back(0.001f);
         }
+        std::cout << "poses.size(): " << state->poses.size() << std::endl;
 
         vx_resc_t *verts = vx_resc_copyf(&points[0], points.size());
         vx_resc_t *trueVerts = vx_resc_copyf(&truePoints[0], truePoints.size());
@@ -176,12 +179,15 @@ animate_thread (void *data)
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
                                        vxo_points(verts, state->poses.size(), vxo_points_style(vx_blue, 2.0f))));
-        vx_buffer_add_back (buff,
+        
+        vx_buffer_t *buff2 = vx_world_get_buffer(state->vxworld, "points2");
+        vx_buffer_add_back (buff2,
                             vxo_chain (mat_scale,
                                        vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_red, 2.0f))));
 
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points"));
+        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points2"));
         image_u32_destroy (im);
 
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));

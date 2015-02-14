@@ -223,8 +223,7 @@ int main(int argc, char **argv)
 
     if(task2)
     {
-        // TODO: change filename
-        std::ifstream input("filename.txt");
+        std::ifstream input("empty.txt");
         int width, height;
         double metersPerCell, logOdds;
         input >> width >> height >> metersPerCell;

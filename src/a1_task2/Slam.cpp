@@ -40,6 +40,7 @@ void Slam::addMotorFeedback(maebot_motor_feedback_t input_feedback)
         return;
     }
     pthread_mutex_lock(&poses_mutex_);
+    std::cout << "added motor feed back\n";
     addPose(input_feedback.encoder_left_ticks, input_feedback.encoder_right_ticks);
     if(poses_.size() > POSES_SIZE)
     {
@@ -51,6 +52,7 @@ void Slam::addMotorFeedback(maebot_motor_feedback_t input_feedback)
 void Slam::addScan(maebot_laser_scan_t laser_scan)
 {
     pthread_mutex_lock(&scans_mutex_);
+    std::cout << "locked scans mutex\n";
     scans_.push(laser_scan);
     pthread_mutex_unlock(&scans_mutex_);
 }
@@ -87,11 +89,13 @@ void Slam::addPose(float left_ticks, float right_ticks)
 void Slam::updateParticles()
 {
     pthread_mutex_lock(&scans_mutex_);
+    std::cout << "locked scans mutex update particles\n";
     maebot_laser_scan_t nextScan = scans_.front();
     scans_.pop();
     pthread_mutex_unlock(&scans_mutex_);
 
     pthread_mutex_lock(&poses_mutex_);
+    std::cout << "locked poses mutex update particles\n";
     LaserScanRange lsr = particles_.getLaserScan(&prev_pose, &nextScan, poses_);
     pthread_mutex_unlock(&poses_mutex_);
 
