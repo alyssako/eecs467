@@ -132,7 +132,6 @@ animate_thread (void *data)
     while (state->running) 
     {
 		//cout << "Animate Thread!" << endl;
-        std::cout << state->grid.widthInCells() << ", " << state->grid.heightInCells() << std::endl;
 		image_u32_t *im = image_u32_create(state->grid.widthInCells(), state->grid.heightInCells());
 		for(int y = 0; y < im->height; y++)
 		{
@@ -146,6 +145,7 @@ animate_thread (void *data)
 		}
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
         const double scale = 1./im->width;
+        //const double scale = 1.0;
 
         auto mat_scale = vxo_mat_scale3(scale, scale, 1.0);
         //vxo_mat_translate3(-im->width/2., -im->height/2., 0.);
@@ -156,24 +156,40 @@ animate_thread (void *data)
                                        vxo_mat_translate3(-im->width/2., -im->height/2., 0.),
                                        vo));// drawing happens here
 
+        //std::cout << "state poses: " << state->poses.size() << std::endl;
         std::vector<float> points;
         for(unsigned int i = 0; i < state->poses.size(); i++)
         {
+            if(!i)
+            {
+                std::cout << "first pose: " << state->poses[i].x << ", " << state->poses[i].y << std::endl;
+            }
             points.push_back(state->poses[i].x/state->grid.metersPerCell());
             points.push_back(state->poses[i].y/state->grid.metersPerCell());
             points.push_back(0.011f);
         }
         
+        //std::cout << "true poses: " << state->truePoses.size() << std::endl;
         std::vector<float> truePoints;
         for(unsigned int i = 0; i < state->truePoses.size(); i++)
         {
+            if(!i)
+            {
+                std::cout << "first true pose: " << state->truePoses[i].x << ", " << state->truePoses[i].y << std::endl;
+            }
             truePoints.push_back(state->truePoses[i].x/state->grid.metersPerCell());
             truePoints.push_back(state->truePoses[i].y/state->grid.metersPerCell());
             truePoints.push_back(0.001f);
         }
+
+        //std::cout << "particles size: " << state->particles.size() << std::endl;
         std::vector<float> particlePoints;
         for(unsigned int i = 0; i < state->particles.size(); i++)
         {
+            if(!i)
+            {
+                std::cout << "first particle: " << state->particles[i].x << ", " << state->particles[i].y << std::endl;
+            }
             particlePoints.push_back(state->particles[i].x/state->grid.metersPerCell());
             particlePoints.push_back(state->particles[i].y/state->grid.metersPerCell());
             particlePoints.push_back(0.001f);
@@ -186,16 +202,16 @@ animate_thread (void *data)
         vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
-                                       vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_red, 2.0f)),
                                        vxo_points(verts, state->poses.size(), vxo_points_style(vx_green, 2.0f)),
+                                       vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_red, 2.0f)),
                                        vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_blue, 2.0f))));
         
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points"));
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points2"));
+        //vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points2"));
         image_u32_destroy (im);
 
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
+        //vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
         pthread_mutex_unlock(&state->gui_mutex);
 
         usleep (1000000/fps);

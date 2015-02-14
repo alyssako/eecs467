@@ -72,6 +72,7 @@ class MaebotLCMHandler
             else if(task2)
             {
                 slam_->addScan(*msg);
+                std::cout << "scan received\n";
             }
         }
 
@@ -79,7 +80,13 @@ class MaebotLCMHandler
                                  const std::string& channel,
                                  const maebot_motor_feedback_t *msg)
         {
+            slam_->lockSlamMutex();
             slam_->addMotorFeedback(*msg);
+            if(slam_->scanReceived())
+            {
+                slam_->signal();
+            }
+            slam_->unlockSlamMutex();
         }
 };
 

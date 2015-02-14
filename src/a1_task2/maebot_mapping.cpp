@@ -34,6 +34,7 @@
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridMapper.hpp"
 #include "Slam.hpp"
+#include "MagicNumbers.hpp"
 
 #define MAX_REVERSE_SPEED -1.0f
 #define MAX_FORWARD_SPEED 1.0f
@@ -156,9 +157,11 @@ static void* send_cmds(void *data)
         state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
 
         pthread_mutex_unlock(&state->cmd_mutex);
-
-        auto a = state->grid_mapper->getOccupancyGrid().toLCM();
-        state->lcm->publish("OCCUPANCY_GRID_GUI", &a);
+        if(task2)
+        {
+            auto a = state->grid_mapper->getOccupancyGrid().toLCM();
+            state->lcm->publish("OCCUPANCY_GRID_GUI", &a);
+        }
 
         usleep(1000000/Hz);
     }
@@ -174,15 +177,19 @@ static void* update_map(void *data)
     {
         if(task2)
         {
+            //std::cout << "about to wait\n";
             state->slam->lockSlamMutex();
             while(!state->slam->scanReceived())
             {
                 state->slam->wait();
             }
             state->slam->unlockSlamMutex();
+            //std::cout << "signaled\n";
 
             state->slam->updateParticles();
+            //std::cout << "updated particles\n";
             state->slam->publish();
+            //std::cout << "published\n";
         }
         else if(task1)
         {
@@ -223,14 +230,15 @@ int main(int argc, char **argv)
 
     if(task2)
     {
+        std::cout << "making grid" << std::endl;
         std::ifstream input("empty.txt");
         int width, height;
         double metersPerCell, logOdds;
         input >> width >> height >> metersPerCell;
-        state->grid_mapper = new OccupancyGridMapper(width, height, metersPerCell);
-        for(int x = 0; x < height; x++)
+        state->grid_mapper = new OccupancyGridMapper(width*metersPerCell, height*metersPerCell, metersPerCell);
+        for(int y = 0; y < height; y++)
         {
-            for(int y = 0; y < width; y++)
+            for(int x = 0; x < width; x++)
             {
                 input >> logOdds;
                 state->grid_mapper->setLogOddsMapper(x, y, logOdds);

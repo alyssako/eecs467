@@ -49,12 +49,12 @@ class Slam
 
         lcm::LCM *lcm;
 
-        float left_prev_dist;
-        float right_prev_dist;
+        int left_prev_ticks;
+        int right_prev_ticks;
         maebot_pose_t prev_pose;
         maebot_pose_t origin;
 
-        void addPose(float left_ticks, float right_ticks);
+        void addPose(int left_ticks, int right_ticks, int64_t utime);
     public:
         Slam(OccupancyGridMapper *gm);
         ~Slam();
