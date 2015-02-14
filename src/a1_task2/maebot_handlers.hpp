@@ -31,8 +31,9 @@ class MaebotLCMHandler
         Slam *slam_;
 
     public:
-        MaebotLCMHandler(OccupancyGridMapper *grid_mapper_t) :
-            grid_mapper_(grid_mapper_t) { }
+        MaebotLCMHandler(OccupancyGridMapper *grid_mapper_t, Slam *slam_t) :
+            grid_mapper_(grid_mapper_t),
+            slam_(slam_t) { }
         
         ~MaebotLCMHandler(){}
 

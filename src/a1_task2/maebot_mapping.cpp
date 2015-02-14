@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
 #include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -156,7 +157,7 @@ static void* send_cmds(void *data)
 
         pthread_mutex_unlock(&state->cmd_mutex);
 
-        auto a = state->grid_mapper.getOccupancyGrid().toLCM();
+        auto a = state->grid_mapper->getOccupancyGrid().toLCM();
         state->lcm->publish("OCCUPANCY_GRID_GUI", &a);
 
         usleep(1000000/Hz);
@@ -185,18 +186,18 @@ static void* update_map(void *data)
         }
         else if(task1)
         {
-            state->grid_mapper.lockMapperMutex();
+            state->grid_mapper->lockMapperMutex();
 
-            while(state->grid_mapper.laserScansEmpty() || state->grid_mapper.posesEmpty())        
-                state->grid_mapper.wait();
-            state->grid_mapper.unlockMapperMutex();
+            while(state->grid_mapper->laserScansEmpty() || state->grid_mapper->posesEmpty())        
+                state->grid_mapper->wait();
+            state->grid_mapper->unlockMapperMutex();
             std::cout << "received message" << std::endl;
 
-            LaserScan updated_scan = state->grid_mapper.calculateLaserOrigins();
+            LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
             if(!updated_scan.valid) continue;
 
-            state->grid_mapper.updateGrid(updated_scan);
-            state->grid_mapper.publishOccupancyGrid(updated_scan.end_pose);
+            state->grid_mapper->updateGrid(updated_scan);
+            state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
         }
     }
     return NULL;
@@ -220,20 +221,20 @@ int main(int argc, char **argv)
     pthread_mutex_init(&state->lcm_mutex, NULL);
     pthread_mutex_init(&state->render_mutex, NULL);
 
-    if(TASK2)
+    if(task2)
     {
         // TODO: change filename
-        ifstream input("filename.txt");
+        std::ifstream input("filename.txt");
         int width, height;
-        double metersPerCell, logodds;
+        double metersPerCell, logOdds;
         input >> width >> height >> metersPerCell;
         state->grid_mapper = new OccupancyGridMapper(width, height, metersPerCell);
         for(int x = 0; x < height; x++)
         {
             for(int y = 0; y < width; y++)
             {
-                input >> logodds;
-                state->grid_mapper->setLogOdds(x, y, logOdds);
+                input >> logOdds;
+                state->grid_mapper->setLogOddsMapper(x, y, logOdds);
             }
         }
     }
@@ -265,7 +266,7 @@ int main(int argc, char **argv)
     verbose = getopt_get_bool(state->gopt, "verbose");
 
     // LCM subscriptions
-    MaebotLCMHandler lcm_handler(&state->grid_mapper);
+    MaebotLCMHandler lcm_handler(state->grid_mapper, state->slam);
     state->lcm->subscribe("MAEBOT_LASER_SCAN",
             &MaebotLCMHandler::handleLaserScan,
             &lcm_handler);

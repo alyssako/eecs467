@@ -58,8 +58,8 @@ class Slam
     public:
         Slam(OccupancyGridMapper *gm);
         ~Slam();
-
         void setLCM(lcm::LCM *lcm_t);
+
         void addMotorFeedback(maebot_motor_feedback_t input_feedback);
         void updateParticles();
         void addScan(maebot_laser_scan_t scan);
