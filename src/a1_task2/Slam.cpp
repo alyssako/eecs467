@@ -1,4 +1,5 @@
 #include "Slam.hpp"
+#include <cassert>
 
 Slam::Slam(OccupancyGridMapper *gm) :
     grid_mapper_(gm),
@@ -129,6 +130,12 @@ void Slam::updateParticles()
         return;
     }
 
+
+    assert(prev_pose.x == prev_pose.x);
+    assert(prev_pose.y == prev_pose.y);
+    assert(lsr.end_pose.x == lsr.end_pose.x);
+    assert(lsr.end_pose.y == lsr.end_pose.y);
+
     float delta_x = lsr.end_pose.x - prev_pose.x;
     float delta_y = lsr.end_pose.y - prev_pose.y;
     float delta_theta = eecs467::angle_diff(lsr.end_pose.theta, prev_pose.theta);
@@ -137,6 +144,9 @@ void Slam::updateParticles()
     prev_pose.theta = lsr.end_pose.theta;
     prev_pose.utime = lsr.end_pose.utime;
     //std::cout << "here2" << std::endl;
+    assert(delta_x == delta_x);
+    assert(delta_y == delta_y);
+
     particles_.updateParticles(delta_x, delta_y, delta_theta, &grid_mapper_->getOccupancyGrid(), lsr);
     //std::cout << "here3" << std::endl;
 }

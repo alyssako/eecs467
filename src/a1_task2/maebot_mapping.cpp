@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <fenv.h>
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
@@ -227,6 +228,9 @@ int main(int argc, char **argv)
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lcm_mutex, NULL);
     pthread_mutex_init(&state->render_mutex, NULL);
+
+//feenableexcept(FE_DIVBYZERO| FE_INVALID|FE_OVERFLOW); 
+feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
 
     if(task2)
     {

@@ -17,20 +17,52 @@
 
 class LCMHandler
 {
+    private:
+        lcm::LCM *lcm_;
+
     public:
-        LCMHandler(){}
+        LCMHandler(lcm::LCM *lcm_t) : lcm_(lcm_t){}
         ~LCMHandler(){}
 
         void handleMessage1(const lcm::ReceiveBuffer *rbuf,
-                           const std::string& channel,
-                           const maebot_laser_scan_t *msg)
+                const std::string& channel,
+                const maebot_pose_t *msg)
         {
-            std::cout << "Laser: " << msg->utime << std::endl;
+            //std::cout << "Laser: " << msg->utime << std::endl;
+            srand (time(NULL));
+
+            eecs467::OccupancyGrid og(10, 10, 0.05);
+            for(int i = 0; i < (int)og.widthInCells(); i++)
+            {
+                for(int j = 0; j < (int)og.heightInCells(); j++)
+                {
+                    og(i, j) = rand() % 255 - 128;
+                }
+            }
+
+            maebot_occupancy_grid_t my_data = og.toLCM();
+
+            lcm_->publish("OCCUPANCY_GRID_GUI", &my_data);
+            
+            maebot_pose_t tmp;
+
+            tmp.utime = msg->utime;
+            tmp.theta = msg->theta;
+            tmp.x = msg->x * 1.05;
+            tmp.y = msg->y * 1.05;
+
+            lcm_->publish("MAEBOT_POSE_GUI", &tmp);
+
+            for(int i = 0; i < 1000; ++i){
+                tmp.x = msg->x + (rand() % 300 / 100.);
+                tmp.y = msg->y + (rand() % 300 / 100.);
+                lcm_->publish("MAEBOT_PARTICLE_GUI", &tmp);
+            } 
         }
 
         void handleMessage2(const lcm::ReceiveBuffer *rbuf,
-                           const std::string& channel,
-                           const maebot_motor_feedback_t *msg)
+                const std::string& channel,
+                const maebot_motor_feedback_t *msg)
         {
             std::cout << "Feedback: " << msg->utime << std::endl;
         }
@@ -41,14 +73,14 @@ int main(){
     if(!lcm.good())
         return 1;
 
-    LCMHandler handler;
+    LCMHandler handler(&lcm);
 
-    lcm.subscribe("MAEBOT_LASER_SCAN",
-                          &LCMHandler::handleMessage1,
-                          &handler);
-    lcm.subscribe("MAEBOT_MOTOR_FEEDBACK",
-                          &LCMHandler::handleMessage2,
-                          &handler);
+    lcm.subscribe("MAEBOT_POSE",
+            &LCMHandler::handleMessage1,
+            &handler);
+    //lcm.subscribe("MAEBOT_MOTOR_FEEDBACK",
+    //                      &LCMHandler::handleMessage2,
+    //                      &handler);
 
     while(lcm.handle() == 0);
     return 0;

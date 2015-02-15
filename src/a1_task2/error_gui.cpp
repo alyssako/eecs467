@@ -38,7 +38,7 @@
 #define SCREEN_HEIGHT 500
 
 using namespace std;
-typedef struct error_state state_t;
+typedef struct gui_state state_t;
 
 // It's good form for every application to keep its state in a struct.
 // Moved to OccupancyGridHandler.hpp 
@@ -51,7 +51,6 @@ typedef struct error_state state_t;
     static void
 my_param_changed (parameter_listener_t *pl, parameter_gui_t *pg, const char *name)
 {
-    return 0;
 }
 
     static int

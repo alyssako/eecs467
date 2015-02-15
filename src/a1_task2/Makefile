@@ -40,6 +40,7 @@ LIB_EECS467 = $(LIB_PATH)/libeecs467.a
 LIBEECS467_OBJS = eecs467_util.o
 
 BIN_MAPPING_GUI = $(BIN_PATH)/mapping_gui
+BIN_ERROR_GUI = $(BIN_PATH)/error_gui
 BIN_EECS467_MAEBOT_MAPPING = $(BIN_PATH)/eecs467_maebot_mapping
 BIN_EECS467_MAEBOT_VIDEO_TELOP = $(BIN_PATH)/eecs467_maebot_video_telop
 BIN_LCM_SENDER = $(BIN_PATH)/lcm_sender
@@ -47,7 +48,7 @@ BIN_LCM_RECEIVER = $(BIN_PATH)/lcm_receiver
 
 ALL = $(LIB_EECS467) $(BIN_MAPPING_GUI) $(BIN_EECS467_APPROX_LASER) \
       $(BIN_EECS467_MAEBOT_MAPPING) $(BIN_EECS467_MAEBOT_VIDEO_TELOP) \
-      $(BIN_EECS467_MOVING_LASER)
+      $(BIN_EECS467_MOVING_LASER) #$(BIN_ERROR_GUI)
 
 
 all: $(ALL)
@@ -63,6 +64,10 @@ $(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o Occu
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_VXGL) $(LIB_VX)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
+
+$(BIN_ERROR_GUI): error_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_VXGL) $(LIB_VX)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 

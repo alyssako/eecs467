@@ -53,47 +53,17 @@ typedef gui_state state_t;
     static void
 my_param_changed (parameter_listener_t *pl, parameter_gui_t *pg, const char *name)
 {
-    if (0==strcmp ("sl1", name))
-        printf ("sl1 = %f\n", pg_gd (pg, name));
-    else if (0==strcmp ("sl2", name))
-        printf ("sl2 = %d\n", pg_gi (pg, name));
-    else if (0==strcmp ("cb1", name) || 0==strcmp ("cb2", name))
-        printf ("%s = %d\n", name, pg_gb (pg, name));
-    else
-        printf ("%s changed\n", name);
 }
 
     static int
 mouse_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_camera_pos_t *pos, vx_mouse_event_t *mouse)
 {
-    state_t *state = (state_t*)vxeh->impl;
-
-    // vx_camera_pos_t contains camera location, field of view, etc
-    // vx_mouse_event_t contains scroll, x/y, and button click events
-
-    if ((mouse->button_mask & VX_BUTTON1_MASK) &&
-            !(state->last_mouse_event.button_mask & VX_BUTTON1_MASK)) {
-
-        vx_ray3_t ray;
-        vx_camera_pos_compute_ray (pos, mouse->x, mouse->y, &ray);
-
-        double ground[3];
-        vx_ray3_intersect_xy (&ray, 0, ground);
-
-        printf ("Mouse clicked at coords: [%8.3f, %8.3f]  Ground clicked at coords: [%6.3f, %6.3f]\n",
-                mouse->x, mouse->y, ground[0], ground[1]);
-    }
-
-    // store previous mouse event to see if the user *just* clicked or released
-    state->last_mouse_event = *mouse;
-
     return 0;
 }
 
     static int
 key_event (vx_event_handler_t *vxeh, vx_layer_t *vl, vx_key_event_t *key)
 {
-    //state_t *state = vxeh->impl;
     return 0;
 }
 
@@ -160,9 +130,9 @@ animate_thread (void *data)
         std::vector<float> points;
         for(unsigned int i = 0; i < state->poses.size(); i++)
         {
-            if(!i)
+            if(i == state->poses.size() - 1)
             {
-                std::cout << "first pose: " << state->poses[i].x << ", " << state->poses[i].y << std::endl;
+                std::cout << "last pose: " << state->poses[i].x << ", " << state->poses[i].y << std::endl;
             }
             points.push_back(state->poses[i].x/state->grid.metersPerCell());
             points.push_back(state->poses[i].y/state->grid.metersPerCell());
@@ -173,9 +143,9 @@ animate_thread (void *data)
         std::vector<float> truePoints;
         for(unsigned int i = 0; i < state->truePoses.size(); i++)
         {
-            if(!i)
+            if(i == state->truePoses.size() - 1)
             {
-                std::cout << "first true pose: " << state->truePoses[i].x << ", " << state->truePoses[i].y << std::endl;
+                std::cout << "last true pose: " << state->truePoses[i].x << ", " << state->truePoses[i].y << std::endl;
             }
             truePoints.push_back(state->truePoses[i].x/state->grid.metersPerCell());
             truePoints.push_back(state->truePoses[i].y/state->grid.metersPerCell());
@@ -186,9 +156,9 @@ animate_thread (void *data)
         std::vector<float> particlePoints;
         for(unsigned int i = 0; i < state->particles.size(); i++)
         {
-            if(!i)
+            if(i == state->particles.size() - 1)
             {
-                std::cout << "first particle: " << state->particles[i].x << ", " << state->particles[i].y << std::endl;
+                std::cout << "last particle: " << state->particles[i].x << ", " << state->particles[i].y << std::endl;
             }
             particlePoints.push_back(state->particles[i].x/state->grid.metersPerCell());
             particlePoints.push_back(state->particles[i].y/state->grid.metersPerCell());

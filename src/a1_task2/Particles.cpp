@@ -29,6 +29,8 @@ maebot_pose_t Particles::toPose(int index)
     retval.theta = particles_[index].theta;
     retval.utime = particles_[index].utime;
 
+    assert(retval.x == retval.x);
+
     return retval;
 }
 
@@ -56,6 +58,9 @@ void Particles::updateParticles(float delta_x, float delta_y, float delta_theta,
 
 void Particles::moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange lsr, float delta_x, float delta_y, float delta_theta)
 {
+    assert(delta_x == delta_x);
+    assert(delta_y == delta_y);
+
     double delta_s = sqrt((delta_x * delta_x) + (delta_y * delta_y));
     double alpha = eecs467::wrap_to_2pi(eecs467::angle_diff(eecs467::wrap_to_2pi(atan2(delta_y, delta_x)), eecs467::wrap_to_2pi(delta_theta)));
     double theta_alpha = eecs467::wrap_to_2pi(eecs467::angle_diff(eecs467::wrap_to_2pi(alpha), eecs467::wrap_to_2pi(delta_theta)));
@@ -73,7 +78,9 @@ void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange la
     /*std::cout << "OLD Delta S:   " << delta_s << std::endl
               << "OLD Delta A:   " << alpha << std::endl 
               << "OLD Delta T-A: " << theta_alpha << std::endl;*/
+    assert(delta_s == delta_s);
     double new_delta_s = gslu_rand_gaussian(r, delta_s, 0.1*delta_s);
+    assert(new_delta_s == new_delta_s);
     double new_delta_alpha = gslu_rand_gaussian(r, alpha, 0.1*alpha);
     double new_delta_theta_alpha = gslu_rand_gaussian(r, theta_alpha, 0.1*theta_alpha);
     /*std::cout << "New Delta S:   " << new_delta_s << std::endl
@@ -112,6 +119,9 @@ void Particles::moveParticle(double s, int index)
 {
     particles_[index].x += s * cos(particles_[index].theta);
     particles_[index].y += s * sin(particles_[index].theta);
+
+    assert(s == s);
+    assert(particles_[index].x == particles_[index].x);
 }
 
 /*void Particles::calculateProbability(occupancy_grid_t *grid, maebot_laser_scan_t *scan)
@@ -248,6 +258,8 @@ LaserScanRange Particles::getLaserScan(maebot_pose_t poseA, maebot_laser_scan_t 
     //std::cout << "mB[0]: " << mB[0].utime << "\nmB[1]: " << mB[1].utime << "\nutime: " << scanB->utime << std::endl;
     maebot_pose_t poseB = moving_laser.findOriginSingle(scanB.utime, mB[0], mB[1]);
     LaserScanRange lsr(true, poseA, poseB, scanB);
+    assert(lsr.end_pose.x == lsr.end_pose.x);
+    assert(lsr.end_pose.y == lsr.end_pose.y);
     return lsr;
 }
 
