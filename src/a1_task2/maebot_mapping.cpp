@@ -231,16 +231,21 @@ int main(int argc, char **argv)
     if(task2)
     {
         std::cout << "making grid" << std::endl;
-        std::ifstream input("empty.txt");
-        int width, height;
-        double metersPerCell, logOdds;
+        std::ifstream input("../src/a1_task2/empty.txt");
+        assert(input.good());
+        int width = 0, 
+            height = 0;
+        double metersPerCell = 0, 
+               logOdds = 0./0.;
         input >> width >> height >> metersPerCell;
+        assert(width && height && metersPerCell);
         state->grid_mapper = new OccupancyGridMapper(width*metersPerCell, height*metersPerCell, metersPerCell);
         for(int y = 0; y < height; y++)
         {
             for(int x = 0; x < width; x++)
             {
                 input >> logOdds;
+                assert(logOdds == logOdds);
                 state->grid_mapper->setLogOddsMapper(x, y, logOdds);
             }
         }
