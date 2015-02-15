@@ -258,6 +258,7 @@ std::vector<maebot_pose_t> Particles::findLeftRightPoses(int64_t time, std::dequ
     //std::cout << "poses[1]: " << (poses.end()-2)->utime << std::endl;
     //std::cout << "time:     " << time << std::endl;
     std::vector<maebot_pose_t> m;
+    assert(!poses.empty());
     for(std::deque<maebot_pose_t>::iterator it = poses.end()-1; it != poses.begin()-1; it--)
     {
  //       assert(it->utime);
