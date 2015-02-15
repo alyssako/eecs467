@@ -1,5 +1,7 @@
 #include "Particles.hpp"
 
+#include <cassert>
+
 Particles::Particles()
 {
     // construct random environment
@@ -258,6 +260,8 @@ std::vector<maebot_pose_t> Particles::findLeftRightPoses(int64_t time, std::dequ
     std::vector<maebot_pose_t> m;
     for(std::deque<maebot_pose_t>::iterator it = poses.end()-1; it != poses.begin()-1; it--)
     {
+ //       assert(it->utime);
+        assert(time);
         if(it->utime > time)
         {
             if(it+1 >= poses.end())

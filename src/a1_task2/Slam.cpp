@@ -14,6 +14,7 @@ Slam::Slam(OccupancyGridMapper *gm) :
     origin.x = prev_pose.x = 0;
     origin.y = prev_pose.y = 0;
     origin.theta = prev_pose.theta = 0;
+    origin.utime = 0; 
     poses_.push_front(origin);
 }
 
