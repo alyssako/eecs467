@@ -60,6 +60,7 @@ class Particles
         
         void print();
         void printProbabilities();
+        void updateTimes(int64_t utime);
         void updateParticles(double delta_x, double delta_y, double delta_theta, double prev_theta, eecs467::OccupancyGrid *grid, LaserScanRange scan);
 
         void moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange lsr, double mean_x, double mean_y, double mean_theta, double prev_theta);

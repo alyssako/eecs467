@@ -35,6 +35,15 @@ maebot_pose_t Particles::toPose(int index)
     return retval;
 }
 
+void Particles::updateTimes(int64_t utime)
+{
+    for(int i = 0; i < NUM_PARTICLES; i++)
+    {
+        particles_[i].utime = utime;
+    }
+    most_likely_ = particles_[0];
+}
+
 maebot_pose_t Particles::mostProbable()
 {
     maebot_pose_t retval;
@@ -115,10 +124,11 @@ void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange la
 
     laser_scan_range.start_pose = toPose(index);
 
-    rotateParticle(gslu_rand_gaussian(r, alpha, 3.14/40), index);
-    moveParticle(gslu_rand_gaussian(r, delta_s, 0.9*delta_s), index);
+    rotateParticle(gslu_rand_gaussian(r, alpha, 3.14/20), index);
+    moveParticle(gslu_rand_gaussian(r, delta_s, delta_s), index);
+    //moveParticle(gslu_rand_gaussian(r, 0, delta_s), index);
     //moveParticle(gslu_rand_gaussian(r, delta_s, 5), index);
-    rotateParticle(gslu_rand_gaussian(r, theta_alpha, 3.14/40), index);
+    rotateParticle(gslu_rand_gaussian(r, theta_alpha, 3.14/20), index);
     
     //rotateParticle(new_delta_alpha, index);
     //moveParticle(new_delta_s, index);
@@ -138,8 +148,8 @@ void Particles::rotateParticle(double theta, int index)
 
 void Particles::moveParticle(double s, int index)
 {
-    particles_[index].x += s * cos(particles_[index].theta);
-    particles_[index].y += s * sin(particles_[index].theta);
+    particles_[index].x += s * cos(particles_[index].theta) + gslu_rand_gaussian(r, 0, 0.1);
+    particles_[index].y += s * sin(particles_[index].theta) + gslu_rand_gaussian(r, 0, 0.1);
 
     assert(s == s);
     assert(particles_[index].x == particles_[index].x);
@@ -179,7 +189,7 @@ void Particles::calculateProbabilitySingle(eecs467::OccupancyGrid *grid, LaserSc
 void Particles::normalizeProbabilities()
 {
     int index_max = findLargestProbability();
-    std::cout << "normalize\n";
+    //std::cout << "normalize\n";
     //printProbabilities();
     subtractProbabilities(particles_[index_max].probability);
     exponentiate();
@@ -281,8 +291,8 @@ void Particles::resample()
         resampled.push_back(particles_[i]);
     }
     particles_ = resampled;
-    print();
-    std::cout << "------------------------------------------------------------------------------------" << std::endl;
+    //print();
+    //std::cout << "------------------------------------------------------------------------------------" << std::endl;
 }
 
 /* find position of laser scan and positions of individual laser beams within scan */

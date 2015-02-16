@@ -161,7 +161,7 @@ static void* send_cmds(void *data)
         if(task2)
         {
             auto a = state->grid_mapper->getOccupancyGrid().toLCM();
-            state->lcm->publish("OCCUPANCY_GRID_GUI", &a);
+            state->lcm->publish("OCCUPANCY_GRID_GUI_TASK2", &a);
         }
 
         usleep(1000000/Hz);
@@ -231,7 +231,7 @@ feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
     if(task2)
     {
         std::cout << "making grid" << std::endl;
-        std::ifstream input("../src/a1_task2/empty.txt");
+        std::ifstream input("figure_eight.txt");
         assert(input.good());
         int width = 0, 
             height = 0;

@@ -39,7 +39,7 @@ class OccupancyGridGuiHandler
                            const std::string& channel,
                            const maebot_occupancy_grid_t *msg)
         {   
-            std::cout << "gui received grid" << std::endl;
+            //std::cout << "gui received grid" << std::endl;
             
             grid->reset();
             grid->fromLCM(*msg);
@@ -58,21 +58,27 @@ class LocationHandler
                         const std::string& channel,
                         const maebot_pose_t *msg)
         {
+            pthread_mutex_lock(&state->gui_mutex);
             state->poses.push_back(*msg);
+            pthread_mutex_unlock(&state->gui_mutex);
         }
 
         void handleTruePose(const lcm::ReceiveBuffer *rbuf,
                             const std::string& channel,
                             const maebot_pose_t *msg)
         {
+            pthread_mutex_lock(&state->gui_mutex);
             state->truePoses.push_back(*msg);
+            pthread_mutex_unlock(&state->gui_mutex);
         }
         
         void handleParticles(const lcm::ReceiveBuffer *rbuf,
                             const std::string& channel,
                             const maebot_pose_t *msg)
         {
+            pthread_mutex_lock(&state->gui_mutex);
             state->particles.push_back(*msg);
+            pthread_mutex_unlock(&state->gui_mutex);
         }
 };
 

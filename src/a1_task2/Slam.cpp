@@ -131,8 +131,13 @@ void Slam::updateParticles()
     {
         return;
     }
+
+    // if the maebot hasn't moved, update the particle times and publish, but don't actually move particles
     if(lsr.end_pose.x == lsr.start_pose.x && lsr.end_pose.y == lsr.end_pose.y)
     {
+        particles_.updateTimes(lsr.end_pose.utime);
+        prev_pose.utime = lsr.end_pose.utime;
+        publish();
         return;
     }
 
@@ -172,6 +177,7 @@ void Slam::publish()
     //std::cout << "first particle: (" << particle.x << ", " << particle.y << ", " << particle.theta << ")\n";
     maebot_pose_t mostProbable = particles_.mostProbable();
     lcm->publish("MAEBOT_POSE_GUI", &mostProbable);
+    lcm->publish("MAEBOT_POSE_BEST_GUI", &mostProbable);
     //std::cout << "sent particles\n";
 }
 

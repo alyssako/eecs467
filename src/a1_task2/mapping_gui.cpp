@@ -125,7 +125,7 @@ animate_thread (void *data)
                                        vxo_mat_translate3(-im->width/2., -im->height/2., 0.),
                                        vo));// drawing happens here
 
-        std::cout << "state poses: " << state->poses.size() << std::endl;
+        //std::cout << "state poses: " << state->poses.size() << std::endl;
         std::vector<float> points;
         for(unsigned int i = 0; i < state->poses.size(); i++)
         {
@@ -171,9 +171,9 @@ animate_thread (void *data)
         vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
-                                       vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_red, 2.0f)),
-				       vxo_points(verts, state->poses.size(), vxo_points_style(vx_green, 2.0f)),
-                                       vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_blue, 2.0f))));
+                                       vxo_points(verts, state->poses.size(), vxo_points_style(vx_green, 4.0f)),
+                                       vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_blue, 4.0f)),
+                                       vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_red, 2.0f))));
         
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points"));
@@ -255,7 +255,7 @@ main (int argc, char *argv[])
     state->lcm = new lcm::LCM;
     pthread_mutex_init(&state->lcm_mutex, NULL);
 
-    state->lcm->subscribe("OCCUPANCY_GRID_GUI",
+    state->lcm->subscribe("OCCUPANCY_GRID_GUI_TASK2",
             &OccupancyGridGuiHandler::handleMessage,
             &gui_handler);
     state->lcm->subscribe("MAEBOT_POSE_GUI", 
