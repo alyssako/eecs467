@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cassert>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
 #include "lcmtypes/maebot_targeting_laser_command_t.hpp"
@@ -46,6 +47,7 @@ maebot_pose_t MovingLaser::findOriginSingle(int64_t t, maebot_pose_t a, maebot_p
 	/*if(t < a.utime || t > b.utime)
 		cout << "Out of range! t: " << t << ", a: " << a.utime << ", b: " << b.utime << endl;*/
 
+    assert(b.utime >= a.utime);
 	double percent = (t - (double)a.utime) / ((double)b.utime - (double)a.utime);
 	maebot_pose_t n;
 	n.x = (b.x - a.x) * percent + a.x;

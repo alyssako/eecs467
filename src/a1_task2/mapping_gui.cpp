@@ -12,7 +12,6 @@
 // core api
 #include "vx/vx.h"
 #include "vx/vx_util.h"
-#include "vx/vx_remote_display_source.h"
 #include "vx/gtk/vx_gtk_display_source.h"
 
 // drawables
@@ -123,45 +122,45 @@ animate_thread (void *data)
                                        vxo_mat_translate3(-im->width/2., -im->height/2., 0.),
                                        vo));// drawing happens here
 
-        //std::cout << "state poses: " << state->poses.size() << std::endl;
+        std::cout << "state poses: " << state->poses.size() << std::endl;
         std::vector<float> points;
         for(unsigned int i = 0; i < state->poses.size(); i++)
         {
-            if(i == state->poses.size() - 1)
+            /*if(i == state->poses.size() - 1)
             {
                 std::cout << "last pose: " << state->poses[i].x << ", " << state->poses[i].y << std::endl;
-            }
-            points.push_back(state->poses[i].x/state->grid.metersPerCell());
-            points.push_back(state->poses[i].y/state->grid.metersPerCell());
-            points.push_back(0.011f);
+            }*/
+            points.push_back((float)(state->poses[i].x/state->grid.metersPerCell()));
+            points.push_back((float)(state->poses[i].y/state->grid.metersPerCell()));
+            points.push_back(0);
         }
         
         //std::cout << "true poses: " << state->truePoses.size() << std::endl;
         std::vector<float> truePoints;
         for(unsigned int i = 0; i < state->truePoses.size(); i++)
         {
-            if(i == state->truePoses.size() - 1)
+            /*if(i == state->truePoses.size() - 1)
             {
                 std::cout << "last true pose: " << state->truePoses[i].x << ", " << state->truePoses[i].y << std::endl;
-            }
-            truePoints.push_back(state->truePoses[i].x/state->grid.metersPerCell());
-            truePoints.push_back(state->truePoses[i].y/state->grid.metersPerCell());
-            truePoints.push_back(0.001f);
+            }*/
+            truePoints.push_back((float)(state->truePoses[i].x/state->grid.metersPerCell()));
+            truePoints.push_back((float)(state->truePoses[i].y/state->grid.metersPerCell()));
+            truePoints.push_back(0);
         }
 
         //std::cout << "particles size: " << state->particles.size() << std::endl;
         std::vector<float> particlePoints;
         for(unsigned int i = 0; i < state->particles.size(); i++)
         {
-            if(i == state->particles.size() - 1)
-            {
-                std::cout << "last particle: " << state->particles[i].x << ", " << state->particles[i].y << std::endl;
-            }
-            particlePoints.push_back(state->particles[i].x/state->grid.metersPerCell());
-            particlePoints.push_back(state->particles[i].y/state->grid.metersPerCell());
-            particlePoints.push_back(0.001f);
+            //if(i == state->particles.size() - 1)
+            //{
+            //    std::cout << state->particles[i].x << ", " << state->particles[i].y << std::endl;
+            //}
+            particlePoints.push_back((float)(state->particles[i].x/state->grid.metersPerCell()));
+            particlePoints.push_back((float)(state->particles[i].y/state->grid.metersPerCell()));
+            particlePoints.push_back(0);
         }
-
+        //std::cout << "particle point size: " << particlePoints.size() << std::endl;
         vx_resc_t *verts = vx_resc_copyf(&points[0], points.size());
         vx_resc_t *trueVerts = vx_resc_copyf(&truePoints[0], truePoints.size());
         vx_resc_t *particleVerts = vx_resc_copyf(&particlePoints[0], particlePoints.size());
@@ -169,8 +168,8 @@ animate_thread (void *data)
         vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
-                                       vxo_points(verts, state->poses.size(), vxo_points_style(vx_green, 2.0f)),
                                        vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_red, 2.0f)),
+				       vxo_points(verts, state->poses.size(), vxo_points_style(vx_green, 2.0f)),
                                        vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_blue, 2.0f))));
         
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
@@ -312,7 +311,6 @@ main (int argc, char *argv[])
     // Initialize this application as a remote display source. This allows
     // you to use remote displays to render your visualization. Also starts up
     // the animation thread, in which a render loop is run to update your display.
-    vx_remote_display_source_t *cxn = vx_remote_display_source_create (&state->vxapp);
 
     // Initialize a parameter gui
     state->pg = pg_create ();
@@ -337,6 +335,5 @@ main (int argc, char *argv[])
     // Cleanup
     free (my_listener);
     state_destroy (state);
-    vx_remote_display_source_destroy (cxn);
     vx_global_destroy ();
 }

@@ -37,7 +37,7 @@ class Slam
         Particles particles_;
         OccupancyGridMapper *grid_mapper_;
 
-        std::deque<maebot_pose_t> poses_;
+        std::vector<maebot_pose_t> poses_;
         pthread_mutex_t poses_mutex_;
 
         std::queue<maebot_laser_scan_t> scans_;
@@ -51,8 +51,9 @@ class Slam
 
         int left_prev_ticks;
         int right_prev_ticks;
+        int64_t prev_time;
         maebot_pose_t prev_pose;
-        maebot_pose_t origin;
+        maebot_pose_t prev_odometry_pose;
 
         void addPose(int left_ticks, int right_ticks, int64_t utime);
     public:
