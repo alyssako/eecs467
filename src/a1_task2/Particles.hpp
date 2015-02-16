@@ -34,11 +34,11 @@
 
 struct Particle
 {
-    float x;
-    float y;
-    float theta;
+    double x;
+    double y;
+    double theta;
     int64_t utime;
-    float probability;
+    double probability;
 };
 
 struct comp
@@ -58,9 +58,11 @@ class Particles
         maebot_pose_t toPose(int index);
         maebot_pose_t mostProbable();
         
-        void updateParticles(float delta_x, float delta_y, float delta_theta, eecs467::OccupancyGrid *grid, LaserScanRange scan);
+        void print();
+        void printProbabilities();
+        void updateParticles(double delta_x, double delta_y, double delta_theta, double prev_theta, eecs467::OccupancyGrid *grid, LaserScanRange scan);
 
-        void moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange lsr, float mean_x, float mean_y, float mean_theta);
+        void moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange lsr, double mean_x, double mean_y, double mean_theta, double prev_theta);
         void moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index);
 
         //void calculateProbability(occupancy_grid_t *grid, maebot_laser_scan_t *scan);
@@ -70,15 +72,15 @@ class Particles
 
         void normalizeProbabilities();
         void exponentiate();
-        void subtractProbabilities(float max);
+        void subtractProbabilities(double max);
         int findLargestProbability();
-        float sumProbabilities();
-        void divideProbabilities(float sum);
+        double sumProbabilities();
+        void divideProbabilities(double sum);
         
         void resample();
         
-        LaserScanRange getLaserScan(maebot_pose_t poseA, maebot_laser_scan_t scanB, std::deque<maebot_pose_t>& poses);
-        std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::deque<maebot_pose_t>& poses);
+        LaserScanRange getLaserScan(maebot_pose_t poseA, maebot_laser_scan_t scanB, std::vector<maebot_pose_t>& poses);
+        std::vector<maebot_pose_t> findLeftRightPoses(int64_t time, std::vector<maebot_pose_t>& poses);
 };
 
 #endif

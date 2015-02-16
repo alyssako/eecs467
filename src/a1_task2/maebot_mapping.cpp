@@ -178,19 +178,15 @@ static void* update_map(void *data)
     {
         if(task2)
         {
-            //std::cout << "about to wait\n";
             state->slam->lockSlamMutex();
             while(!state->slam->scanReceived())
             {
                 state->slam->wait();
             }
             state->slam->unlockSlamMutex();
-            //std::cout << "signaled\n";
 
             state->slam->updateParticles();
-            //std::cout << "updated particles\n";
-            state->slam->publish();
-            //std::cout << "published\n";
+            //state->slam->publish();
         }
         else if(task1)
         {
@@ -230,7 +226,7 @@ int main(int argc, char **argv)
     pthread_mutex_init(&state->render_mutex, NULL);
 
 //feenableexcept(FE_DIVBYZERO| FE_INVALID|FE_OVERFLOW); 
-feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
+feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
 
     if(task2)
     {
@@ -240,7 +236,7 @@ feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
         int width = 0, 
             height = 0;
         double metersPerCell = 0, 
-               logOdds = 0./0.;
+               logOdds = 0;
         input >> width >> height >> metersPerCell;
         assert(width && height && metersPerCell);
         state->grid_mapper = new OccupancyGridMapper(width*metersPerCell, height*metersPerCell, metersPerCell);
@@ -249,7 +245,6 @@ feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
             for(int x = 0; x < width; x++)
             {
                 input >> logOdds;
-                assert(logOdds == logOdds);
                 state->grid_mapper->setLogOddsMapper(x, y, logOdds);
             }
         }
