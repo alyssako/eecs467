@@ -36,9 +36,6 @@
 #include "mapping/occupancy_grid_utils.hpp"
 #include "OccupancyGridGuiHandler.hpp"
 
-#define SCREEN_WIDTH 500
-#define SCREEN_HEIGHT 500
-
 using namespace std;
 typedef gui_state state_t;
 

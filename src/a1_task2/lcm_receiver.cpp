@@ -30,7 +30,7 @@ class LCMHandler
         {
             //std::cout << "Laser: " << msg->utime << std::endl;
             srand (time(NULL));
-
+/*
             eecs467::OccupancyGrid og(10, 10, 0.05);
             for(int i = 0; i < (int)og.widthInCells(); i++)
             {
@@ -43,22 +43,22 @@ class LCMHandler
             maebot_occupancy_grid_t my_data = og.toLCM();
 
             lcm_->publish("OCCUPANCY_GRID_GUI", &my_data);
-            
+  */          
             maebot_pose_t tmp;
 
             tmp.utime = msg->utime;
             tmp.theta = msg->theta;
-            tmp.x = msg->x * 1.05;
-            tmp.y = msg->y * 1.05;
+            tmp.x = msg->x * 1.5;
+            tmp.y = msg->y * 1.5;
 
-            lcm_->publish("MAEBOT_POSE_GUI", &tmp);
+            lcm_->publish("MAEBOT_POSE_GUI_E", &tmp);
 
-            for(int i = 0; i < 1000; ++i){
+/*            for(int i = 0; i < 1000; ++i){
                 tmp.x = msg->x + (rand() % 300 / 100.);
                 tmp.y = msg->y + (rand() % 300 / 100.);
                 lcm_->publish("MAEBOT_PARTICLE_GUI", &tmp);
             } 
-        }
+   */     }
 
         void handleMessage2(const lcm::ReceiveBuffer *rbuf,
                 const std::string& channel,
