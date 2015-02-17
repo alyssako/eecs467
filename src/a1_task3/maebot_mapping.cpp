@@ -181,9 +181,11 @@ static void* update_map(void *data)
 
         LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
         if(!updated_scan.valid) continue;
+        //std::cout << "valid scan" << std::endl;
 
         state->grid_mapper->updateGrid(updated_scan);
         state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
+        //std::cout << "publish occupancy grid" << std::endl;
     }
     return NULL;
 }
@@ -271,9 +273,9 @@ int main(int argc, char **argv)
             &MaebotLCMHandler::handleMotorFeedback,
             &lcm_handler);
 
-    state->lcm->subscribe("MAEBOT_POSE_BEST",
+    /*state->lcm->subscribe("MAEBOT_POSE_BEST",
             &MaebotLCMHandler::handlePose,
-            &lcm_handler);
+            &lcm_handler);*/
 
     std::cout << "listening" << std::endl;
 

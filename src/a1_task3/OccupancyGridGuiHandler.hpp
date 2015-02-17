@@ -59,6 +59,7 @@ class LocationHandler
                         const std::string& channel,
                         const maebot_pose_t *msg)
         {
+            //std::cout << "gui received pose" << std::endl;
             assert(channel == "MAEBOT_POSE_BEST");
             pthread_mutex_lock(&state->gui_mutex);
             state->poses.push_back(*msg);

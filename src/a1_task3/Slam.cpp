@@ -129,7 +129,7 @@ void Slam::updateParticles()
         return;
     }
 
-    std::cout << "update Particles\n";
+    //std::cout << "update Particles\n";
     //assert not nan
     assert(prev_pose.x == prev_pose.x);
     assert(prev_pose.y == prev_pose.y);
@@ -160,8 +160,7 @@ void Slam::publish()
     maebot_pose_t mostProbable = particles_.mostProbable();
     //lcm->publish("MAEBOT_POSE_GUI", &mostProbable);
 
-    // pass pose to grid_mapper_
-    /*grid_mapper_->lockPosesMutex();
+    grid_mapper_->lockPosesMutex();
     grid_mapper_->lockMapperMutex();
     grid_mapper_->addPose(mostProbable);
     if(!grid_mapper_->laserScansEmpty())
@@ -169,7 +168,7 @@ void Slam::publish()
         grid_mapper_->signal();
     }
     grid_mapper_->unlockPosesMutex();
-    grid_mapper_->unlockMapperMutex();*/
+    grid_mapper_->unlockMapperMutex();
     lcm->publish("MAEBOT_POSE_BEST", &mostProbable);
     //std::cout << "sent particles\n";
 }

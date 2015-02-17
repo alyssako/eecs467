@@ -28,20 +28,16 @@ class MaebotLCMHandler
 {
     private:
         OccupancyGridMapper *grid_mapper_;
-        int count_odometry;
-        int count_laser_scan;
         Slam *slam_;
 
     public:
         MaebotLCMHandler(OccupancyGridMapper *grid_mapper_t, Slam *slam_t) :
             grid_mapper_(grid_mapper_t),
-            count_odometry(0),
-            count_laser_scan(0),
             slam_(slam_t) { }
         
         ~MaebotLCMHandler(){}
 
-        void handlePose(const lcm::ReceiveBuffer *rbuf,
+        /*void handlePose(const lcm::ReceiveBuffer *rbuf,
                            const std::string& channel,
                            const maebot_pose_t *msg)
         {
@@ -55,7 +51,7 @@ class MaebotLCMHandler
             }
             grid_mapper_->unlockPosesMutex();
             grid_mapper_->unlockMapperMutex();
-        }
+        }*/
 
         void handleLaserScan(const lcm::ReceiveBuffer *rbuf,
                              const std::string& channel,
@@ -72,9 +68,6 @@ class MaebotLCMHandler
             slam_->addScan(*msg);
             grid_mapper_->unlockLaserScansMutex();
             grid_mapper_->unlockMapperMutex();
-            
-            count_laser_scan++;
-            std::cout << "laser scans: " << count_laser_scan << std::endl;
         }
 
         void handleMotorFeedback(const lcm::ReceiveBuffer *rbuf,
@@ -89,8 +82,6 @@ class MaebotLCMHandler
                 slam_->signal();
             }
             slam_->unlockSlamMutex();
-            count_odometry++;
-            std::cout << "odometry :   " << count_odometry << std::endl;
         }
 };
 

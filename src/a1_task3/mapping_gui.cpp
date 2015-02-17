@@ -97,7 +97,10 @@ animate_thread (void *data)
     // when the window is closed/Ctrl+C is received.
     while (state->running) 
     {
+        //std::cout << "animate thread" << std::endl;
 		image_u32_t *im = image_u32_create(state->grid.widthInCells(), state->grid.heightInCells());
+        //std::cout << "height: " << im->height << std::endl;
+        //std::cout << "width:  " << im->width << std::endl;
 		for(int y = 0; y < im->height; y++)
 		{
 			for(int x = 0; x < im->width; x++)

@@ -148,7 +148,7 @@ void OccupancyGridMapper::publishOccupancyGrid(maebot_pose_t pose)
         i++;
     }*/
     //lcm->publish("MAEBOT_POSE_GUI", &pose);
-    std::cout << "sent grid\n";
+    //std::cout << "sent grid\n";
 }
 
 ApproxLaser OccupancyGridMapper::getApproxLaser()

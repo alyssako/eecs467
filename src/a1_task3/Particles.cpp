@@ -93,16 +93,16 @@ void Particles::moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange lsr, dou
         //std::cout << particles_[i].x << " " <<  particles_[i].y << " " <<  particles_[i].theta << std::endl;
     }
 
-    int count = 0;
+    /*int count = 0;
     for(int i = 0; i < NUM_PARTICLES; i++)
     {
         for(int j = 0; j < NUM_PARTICLES; j++)
         {
             if(i==j) {continue;}
             //assert(random_nums[i] != random_nums[j]);
-            /*assert(particles_[i].x != particles_[j].x &&
+            assert(particles_[i].x != particles_[j].x &&
                    particles_[i].y != particles_[j].y &&
-                   particles_[i].theta != particles_[j].theta);*/
+                   particles_[i].theta != particles_[j].theta);
             if(particles_[i].x == particles_[j].x ||
                particles_[i].y == particles_[j].y ||
                particles_[i].theta == particles_[j].theta)
@@ -111,7 +111,7 @@ void Particles::moveRandom(eecs467::OccupancyGrid *grid, LaserScanRange lsr, dou
             }
         }
     }
-    std::cout << "count: " << count << std::endl;
+    std::cout << "count: " << count << std::endl;*/
 }
 
 void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange laser_scan_range, double delta_s, double alpha, double theta_alpha, int index)
