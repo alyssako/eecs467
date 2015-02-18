@@ -10,6 +10,9 @@
 #define GRID_WIDTH 200
 #define GRID_HEIGHT 200
 
+#define WAYPOINT_RADIUS 0.015
+#define THETA_VARIANCE_MAX 0.75
+    
 #define task1 0
 #define task2 1
 

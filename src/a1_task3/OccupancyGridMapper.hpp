@@ -46,6 +46,8 @@ class OccupancyGridMapper
         
         ApproxLaser approx_laser_;
         MovingLaser moving_laser_;
+        int count;
+        std::vector<int> bfs_result_;
         //std::vector<maebot_pose_t> end_points_;
 
     public:

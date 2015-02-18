@@ -6,7 +6,8 @@ OccupancyGridMapper::OccupancyGridMapper(lcm::LCM *lcm_t) :
 	bfs_(10, 10, 0.05),
 	occupancy_grid_(10, 10, 0.05),
 	occupancy_grid_expanded_(10, 10, 0.05),
-    lcm(lcm_t)
+    lcm(lcm_t),
+    count(0)
 {
     pthread_mutex_init(&mapper_mutex_, NULL);
     pthread_cond_init(&cv_, NULL);
@@ -164,16 +165,21 @@ int OccupancyGridMapper::toY(int index)
 std::vector<int> OccupancyGridMapper::backtrace(int endx, int endy, int startx, int starty)
 { 
     std::vector<int> r;
+    int count = 0;
     while(1)
     {
         assert(r.size() <= 40000);
-        r.push_back(toIndex(endx, endy));
+        if(count%4)
+        {
+            r.push_back(toIndex(endx, endy));
+        }
         int newx = (int)getParentRight(endx, endy) - (int)getParentLeft(endx, endy) + endx;
         int newy = (int)getParentDown(endx, endy) - (int)getParentUp(endx, endy) + endy;
 
         if(newx == startx && newy == starty) { break; }
         endx = newx;
         endy = newy;
+        count++;
     }
     for(uint i = 0; i < r.size(); i++)
     {
@@ -357,8 +363,14 @@ std::vector<int> OccupancyGridMapper::updateGrid(LaserScan scan)
     expandOccupancyGrid();
     eecs467::Point<double> c(scan.end_pose.x, scan.end_pose.y);
     eecs467::Point<int> cellPoint = global_position_to_grid_cell(c, occupancy_grid_);
-    resetBFS();
-    return search(cellPoint.x, cellPoint.y);
+    
+    if(count == 0)
+    {
+        resetBFS();
+        bfs_result_ = search(cellPoint.x, cellPoint.y);
+    }
+    count = (count+1)%50;
+    return bfs_result_;
 }
 
 /*
