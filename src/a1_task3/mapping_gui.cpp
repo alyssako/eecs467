@@ -160,6 +160,7 @@ animate_thread (void *data)
         }*/
 
         std::vector<float> pathPoints;
+        std::cout << "path points size: " << state->pathPoints.size() << std::endl;
         for(int i = 0; i < state->pathPoints.size(); i++)
         {
             pathPoints.push_back((float)(state->pathPoints[i].x/state->grid.metersPerCell()));
@@ -215,7 +216,7 @@ animate_thread (void *data)
 
         vx_buffer_add_back(buff,
                             vxo_chain(mat_scale,
-                                        vxo_points(pathVerts, pathPoints.size() / 3, vxo_points_style(vx_purple, 2.0f))));
+                                        vxo_points(pathVerts, state->pathPoints.size(), vxo_points_style(vx_purple, 2.0f))));
         
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,

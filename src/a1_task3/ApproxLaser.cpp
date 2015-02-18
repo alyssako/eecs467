@@ -11,6 +11,11 @@ LaserScanRange ApproxLaser::findPts(const maebot_laser_scan_t *scan)
 
     // scrap the first lidar scan because we don't have two poses to interpolate from
     maebot_pose_t start, end;
+    start.x = 0;
+    start.y = 0;
+    start.theta = 0;
+    start.utime = 0;
+    end = start;
     LaserScanRange retval = {false, start, end, *scan};
     if(poses_.size() != 1){
         bool found = false;

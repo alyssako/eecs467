@@ -9,6 +9,9 @@ Slam::Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t, location *loc_t) :
     prev_time(0)
 {
     pthread_mutex_init(&slam_mutex_, NULL);
+    pthread_mutex_init(&poses_mutex_, NULL);
+    pthread_mutex_init(&scans_mutex_, NULL);
+    pthread_mutex_init(&path_mutex_, NULL);
     pthread_cond_init(&cv_, NULL);
 
     left_prev_ticks = -1;
@@ -43,7 +46,11 @@ void Slam::addMotorFeedback(maebot_motor_feedback_t input_feedback)
 
 void Slam::addScan(maebot_laser_scan_t laser_scan)
 {
+    pthread_mutex_lock(&scans_mutex_);
+    //std::cout << "add scan mutex lock" << std::endl;
     scans_.push(laser_scan);
+    pthread_mutex_unlock(&scans_mutex_);
+    //std::cout << "add scan mutex unlock" << std::endl;
     prev_time = laser_scan.utime;
     scan_received_ = true;
     
@@ -56,7 +63,11 @@ void Slam::addPose(int left_ticks, int right_ticks, int64_t utime)
     {
         maebot_pose_t newPose = prev_pose;
         newPose.utime = utime;
+        pthread_mutex_lock(&poses_mutex_);
+        //std::cout << "addPose mutex lock" << std::endl;
         poses_.push_back(newPose);
+        pthread_mutex_unlock(&poses_mutex_);
+        //std::cout << "addPose mutex unlock" << std::endl;
         return;
     }
 
@@ -86,12 +97,20 @@ void Slam::addPose(int left_ticks, int right_ticks, int64_t utime)
     nextPose.utime = utime;
     prev_odometry_pose = nextPose;
 
+    pthread_mutex_lock(&poses_mutex_);
+    //std::cout << "addPose2 mutex lock" << std::endl;
     poses_.push_back(nextPose);
+    pthread_mutex_unlock(&poses_mutex_);
+    //std::cout << "addPose2 mutex unlock" << std::endl;
 }
 
 void Slam::pushFirstScan()
 {
+    pthread_mutex_lock(&scans_mutex_);
+    //std::cout << "push First Scan mutex lock" << std::endl;
     maebot_laser_scan_t first = scans_.front();
+    pthread_mutex_unlock(&scans_mutex_);
+    //std::cout << "push First scan mutex unlock" << std::endl;
     grid_mapper_->addLaserScan(first);
 
     maebot_pose_t mostProbable = particles_.mostProbable();
@@ -101,17 +120,30 @@ void Slam::pushFirstScan()
 maebot_laser_scan_t Slam::updateParticles()
 {
     assert(scan_received_);
+    pthread_mutex_lock(&scans_mutex_);
+    //std::cout << "lock scans mutex update particles" << std::endl;
     maebot_laser_scan_t nextScan = scans_.front();
     scans_.pop();
-    if(scans_.empty()) { scan_received_ = false; }
+    if(scans_.empty())
+    {
+        scan_received_ = false;
+    }
+    pthread_mutex_unlock(&scans_mutex_);
+    //std::cout << "unlock scans mutex update particles" << std::endl;
 
     // if only 1 pose, can't call findLeftRightPoses
+    pthread_mutex_lock(&poses_mutex_);
+    //std::cout << "lock poses mutex update particles" << std::endl;
     if(poses_.size() < 2)
     {
+        pthread_mutex_unlock(&poses_mutex_);
+        //std::cout << "unlock poses mutex update particles" << std::endl;
         return nextScan;
     }
     assert(prev_pose.utime <= nextScan.utime);
     LaserScanRange lsr = particles_.getLaserScan(prev_pose, nextScan, poses_, mB);
+    pthread_mutex_unlock(&poses_mutex_);
+    //std::cout << "unlock poses mutex update particles" << std::endl;
     if(!lsr.valid)
     {
         return nextScan;
@@ -155,13 +187,15 @@ void Slam::publish()
         lcm->publish("MAEBOT_PARTICLE_GUI", &pose);
     }
 
-    /*for(int i = 0; i < path.size(); i++)
+    for(int i = 0; i < bfs_result.size(); i++)
     {
         maebot_pose_t pose;
-        pose.x = path.getCenterMetersX(path.x[i], grid_mapper_->metersPerCellMapper());
-        pose.y = path.getCenterMetersY(path.y[i], grid_mapper_->metersPerCellMapper());
+        eecs467::Point<int> p(grid_mapper_->toX(bfs_result[i]), grid_mapper_->toY(bfs_result[i]));
+        auto pp = eecs467::grid_position_to_global_position(p, grid_mapper_->bfs_);
+        pose.x = pp.x;
+        pose.y = pp.y;
         lcm->publish("MAEBOT_PATH_GUI", &pose);
-    }*/
+    }
     //lcm->publish("MAEBOT_PARTICLE_GUI", &poses_.back());
     
     // publish particle to gui
@@ -186,6 +220,11 @@ void Slam::publish()
     //std::cout << "sent particles\n";
 }
 
+maebot_pose_t Slam::mostProbableParticle()
+{
+    return particles_.mostProbable();
+}
+
 bool Slam::scanReceived()
 {
     return scan_received_;
@@ -194,6 +233,7 @@ bool Slam::scanReceived()
 void Slam::lockSlamMutex()
 {
     pthread_mutex_lock(&slam_mutex_);
+    //std::cout << "slam mutex locked" << std::endl;
 }
 
 void Slam::unlockSlamMutex()

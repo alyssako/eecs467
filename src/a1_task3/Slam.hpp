@@ -42,8 +42,10 @@ class Slam
         //Path path;
 
         std::vector<maebot_pose_t> poses_;
+        pthread_mutex_t poses_mutex_;
 
         std::queue<maebot_laser_scan_t> scans_;
+        pthread_mutex_t scans_mutex_;
 
         pthread_mutex_t slam_mutex_;
         pthread_cond_t cv_;
@@ -63,6 +65,10 @@ class Slam
     public:
         Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t, location *loc_t);
         ~Slam();
+        
+        pthread_mutex_t path_mutex_;
+        vector<int> bfs_result;
+        maebot_pose_t mostProbableParticle();
 
         void addMotorFeedback(maebot_motor_feedback_t input_feedback);
         maebot_laser_scan_t updateParticles();

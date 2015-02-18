@@ -46,19 +46,22 @@ class OccupancyGridMapper
         
         ApproxLaser approx_laser_;
         MovingLaser moving_laser_;
-        std::vector<maebot_pose_t> end_points_;
+        //std::vector<maebot_pose_t> end_points_;
 
     public:
+        eecs467::OccupancyGrid bfs_;
         OccupancyGridMapper(lcm::LCM *lcm_t);
         //OccupancyGridMapper(int height, int width, double cellSize);
         ~OccupancyGridMapper();
 
         void setLogOddsMapper(int x, int y, double logOdds);
         void expandOccupancyGrid();
+        void search();
+        void backtrace();
         
         LaserScan calculateLaserOrigins();
 
-        void updateGrid(LaserScan scan);
+        std::vector<int> updateGrid(LaserScan scan);
         void publishOccupancyGrid(maebot_pose_t pose);
         
         void drawLineMeters(double, double, double, double, double, eecs467::CellOdds, eecs467::CellOdds);
@@ -81,6 +84,30 @@ class OccupancyGridMapper
         void signal();
 
         double metersPerCellMapper();
+        void clearBFS();
+        void resetBFS();
+        std::vector<int> search(int x, int y);
+        int toIndex(int x, int y);
+        int toX(int index);
+        int toY(int index);
+        //std::vector<int> backtrace(int x, int y);
+        std::vector<int> backtrace(int endx, int endy, int startx, int starty);
+        bool getUnknown(int _x, int _y);
+        bool getOccupied(int _x, int _y);
+        bool getVisited(int _x, int _y);
+        void setParentRight(int x, int y);
+        bool getParentRight(int x, int y);
+        void setParentUp(int x, int y);
+        bool getParentUp(int x, int y);
+        void setParentLeft(int x, int y);
+        bool getParentLeft(int x, int y);
+        void setParentDown(int x, int y);
+        bool getParentDown(int x, int y);
+        void setFree(int x, int y);
+        void setUnknown(int x, int y);
+        void setOccupied(int x, int y);
+        void setVisited(int x, int y);
+        bool isolateBit(int v, int index);
 };
 
 #endif
