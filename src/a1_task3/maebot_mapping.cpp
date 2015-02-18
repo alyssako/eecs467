@@ -88,6 +88,22 @@ static state_t *global_state;
 //    return NULL;
 //}
 
+bool reachGoal(state_t *state) {
+    return (abs(state->loc.x - state->next_x) < SAME_REGION_R && 
+            abs(state->loc.y - state->next.y) < SAME_REGION_R);
+}
+
+bool rightAngle(state_t *state, double &angle) {
+    if (state->next_x != state->loc.x) 
+        angle = atan((state->next_y - state->loc.y)/(state->next_x - state->loc.x));
+    else if (state->next_y > state->loc.y)
+        angle = 3.14/2.0;
+    else 
+        angle = -3.14/2.0;
+    
+    return (abs(state->loc.theta - angle) < SAME_ANGLE_D);
+}
+
 // This thread continuously publishes command messages to the maebot
 static void* send_cmds(void *data)
 {
@@ -95,72 +111,72 @@ static void* send_cmds(void *data)
     uint32_t Hz = 20;
 
     while (state->running) {
-        pthread_mutex_lock(&state->cmd_mutex);
-        matd_t *click = matd_create_data(3, 1, state->last_click);
-        double mag = matd_vec_mag(click);
-        matd_t *n = click;
-        if (mag != 0) {
-            n = matd_vec_normalize(click);  // Leaks memory
-        }
-        double len = dmin(mag, state->joy_bounds);
-
-        // Map vector direction to motor command.
-        state->cmd.utime = utime_now();
-
-        int sign_x = matd_get(n, 0, 0) >= 0; // > 0 if positive
-        int sign_y = matd_get(n, 1, 0) >= 0; // > 0 if positive
-        float magx = fabs(matd_get(n, 0, 0));
-        float magy = fabs(matd_get(n, 1, 0));
-        float x2y = magx > 0 ? (magx-magy)/magx : 0.0f;
-        float y2x = magy > 0 ? (magy-magx)/magy : 0.0f;
-        float scale = 1.0f*len/state->joy_bounds;
-
-        // Quadrant check
-        if (sign_y && sign_x) {
-            // Quad I
-            state->cmd.motor_left_speed = MAX_FORWARD_SPEED*scale;
-            if (magx > magy) {
-                state->cmd.motor_right_speed = MAX_REVERSE_SPEED*scale*x2y;
-            } else {
-                state->cmd.motor_right_speed = MAX_FORWARD_SPEED*scale*y2x;
-            }
-        } else if (sign_y && !sign_x) {
-            // Quad II
-            state->cmd.motor_right_speed = MAX_FORWARD_SPEED*scale;
-            if (magx > magy) {
-                state->cmd.motor_left_speed = MAX_REVERSE_SPEED*scale*x2y;
-            } else {
-                state->cmd.motor_left_speed = MAX_FORWARD_SPEED*scale*y2x;
-            }
-        } else if (!sign_y && !sign_x) {
-            // Quad III
-            state->cmd.motor_left_speed = MAX_REVERSE_SPEED*scale;
-            if (magx > magy) {
-                state->cmd.motor_right_speed = MAX_FORWARD_SPEED*scale*x2y;
-            } else {
-                state->cmd.motor_right_speed = MAX_REVERSE_SPEED*scale*y2x;
-            }
-        } else {
-            // Quad IV
-            state->cmd.motor_right_speed = MAX_REVERSE_SPEED*scale;
-            if (magx > magy) {
-                state->cmd.motor_left_speed = MAX_FORWARD_SPEED*scale*x2y;
-            } else {
-                state->cmd.motor_left_speed = MAX_REVERSE_SPEED*scale*y2x;
-            }
-        }
-
-        if (mag != 0) {
-            matd_destroy(n);
-        }
-        matd_destroy(click);
-
-        // Publish
-        state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
-
-        pthread_mutex_unlock(&state->cmd_mutex);
-
         usleep(1000000/Hz);
+        
+        pthread_mutex_lock(state->loc.move_mutex);
+        
+        if (!state->has_feedback) {
+            pthread_mutex_unlock(state->loc.move_mutex);
+            continue;
+        }
+        
+        if (state->need_init){
+            state->right_prev_dist = (state->feedback.encoder_right_ticks/480.0) * 0.032 * 3.14;
+            state->left_prev_dist = (state->feedback.encoder_left_ticks/480.0) * 0.032 * 3.14;
+            state->need_init = false;
+        }
+        
+        double cur_dist = (state->feedback.encoder_right_ticks/480.0) * 0.032 * 3.14;
+        double right_step = cur_dist - state->right_prev_dist;
+        //printf("cur_dist: prev_dist: right_step:\t%f\t%f\t%f\n", cur_dist, state->right_prev_dist, right_step);
+        state->right_prev_dist = cur_dist;
+    
+        cur_dist = (state->feedback.encoder_left_ticks/480.0) * 0.032 *3.14;
+        double left_step = cur_dist - state->left_prev_dist;
+        //printf("cur_dist: prev_dist: left_step:\t%f\t%f\t%f\n", cur_dist, state->left_prev_dist, left_step);
+        state->left_prev_dist = cur_dist;
+
+        //odometry
+        double s_ = (right_step + left_step)/2;
+        double delta_theta = (right_step - left_step)/0.08;
+        double alpha = delta_theta/2;
+        state->loc.x += cos(state->loc.theta + alpha) * s_; 
+        state->loc.y += sin(state->loc.theta + alpha) * s_; 
+        state->loc.theta = eecs467::wrap_to_2pi(state->loc.theta + delta_theta);
+
+        if(reachGoal(&state)){
+            if (no next) {   
+                pthread_mutex_unlock(state->loc.move_mutex);
+                cmd.motor_right_speed = 0.0f;
+                cmd.motor_left_speed = 0.0f;
+                state->lcm->publish("MAEBOT_MOTOR_COMMAND", &cmd);
+                continue;
+            }
+
+            // get next goal location here
+            state->next_x = ...;
+            state->next_y = ...;     
+        }
+        pthread_mutex_unlock(state->loc.move_mutex);
+
+        maebot_motor_command_t cmd;
+        cmd.utime = utime_now();
+        
+        double angle;
+        if(!rightAngle(&state, angle)){
+            if(eecs467::angle_diff(state->loc.theta, angle) > 0) {
+                cmd.motor_right_speed = FORWARD_V;
+                cmd.motor_left_speed = FORWARD_V * -1;
+            } else {
+                cmd.motor_right_speed = FORWARD_V * -1;
+                cmd.motor_left_speed = FORWARD_V; 
+            }
+        } else { 
+            cmd.motor_right_speed = FORWARD_V;
+            cmd.motor_left_speed = FORWARD_V;
+        }
+
+        state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
     }
 
     return NULL;
@@ -226,12 +242,21 @@ int main(int argc, char **argv)
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lcm_mutex, NULL);
     pthread_mutex_init(&state->render_mutex, NULL);
+    pthread_mutex_init(&state->loc.move_mutex, NULL);
+
+    state->loc.x = 0;
+    state->loc.y = 0;
+    state->loc.theta = 0;
+    state->next_x = 0;
+    state->next_y = 0;
+    state->need_init = true;
+    state->has_feedback = false; 
 
     //feenableexcept(FE_DIVBYZERO| FE_INVALID|FE_OVERFLOW); 
     feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
 
     state->grid_mapper = new OccupancyGridMapper(state->lcm);
-    state->slam = new Slam(state->grid_mapper, state->lcm);
+    state->slam = new Slam(state->grid_mapper, state->lcm, &state->loc);
     // === End =============================================
 
     // Clean up on Ctrl+C
@@ -253,7 +278,7 @@ int main(int argc, char **argv)
     verbose = getopt_get_bool(state->gopt, "verbose");
 
     // LCM subscriptions
-    MaebotLCMHandler lcm_handler(state->grid_mapper, state->slam);
+    MaebotLCMHandler lcm_handler(state->grid_mapper, state->slam, &state);
 
     state->lcm->subscribe("MAEBOT_LASER_SCAN",
             &MaebotLCMHandler::handleLaserScan,

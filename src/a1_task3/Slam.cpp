@@ -1,10 +1,11 @@
 #include "Slam.hpp"
 #include <cassert>
 
-Slam::Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t) :
+Slam::Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t, location *loc_t) :
     grid_mapper_(gm),
     scan_received_(false),
     lcm(lcm_t),
+    loc_(loc_t),
     prev_time(0)
 {
     pthread_mutex_init(&slam_mutex_, NULL);
@@ -169,6 +170,13 @@ void Slam::publish()
 
     grid_mapper_->lockMapperMutex();
     grid_mapper_->addPose(mostProbable);
+   
+    pthread_mutex_lock(loc_->move_mutex);
+    loc_->x = mostProbable.x;
+    loc_->y = mostProbable.y;
+    loc_->theta = mostProbable.theta;
+    pthread_mutex_unlock(loc_->move_mutex);
+
     if(!grid_mapper_->laserScansEmpty())
     {
         grid_mapper_->signal();

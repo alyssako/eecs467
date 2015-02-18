@@ -38,6 +38,13 @@
 
 #include <vector>
 
+struct location {
+    double theta;
+    double x;
+    double y;
+    pthread_mutex_t move_mutex;
+};
+
 struct gui_state {
     bool running;
 
@@ -76,6 +83,17 @@ struct gui_state {
     std::vector<maebot_pose_t> pathPoints;
 
     int location_count;
+ 
+    // bot info
+    bool need_init;
+    bool has_feedback;
+    double right_prev_dist;
+    double left_prev_dist;
+    double next_x;
+    double next_y;
+
+    location loc;
+    maebot_motor_feedback_t feedback; 
 };
 
 struct error_state {

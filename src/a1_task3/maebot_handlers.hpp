@@ -23,17 +23,21 @@
 #include "ApproxLaser.hpp"
 #include "OccupancyGridMapper.hpp"
 #include "Slam.hpp"
+#include "state.hpp"
 
 class MaebotLCMHandler
 {
     private:
         OccupancyGridMapper *grid_mapper_;
         Slam *slam_;
+        gui_state *state_;
 
     public:
-        MaebotLCMHandler(OccupancyGridMapper *grid_mapper_t, Slam *slam_t) :
+        MaebotLCMHandler(OccupancyGridMapper *grid_mapper_t, Slam *slam_t, 
+                         gui_state *state_t) :
             grid_mapper_(grid_mapper_t),
-            slam_(slam_t) { }
+            slam_(slam_t),
+            state_(state_t) { }
         
         ~MaebotLCMHandler(){}
 
@@ -73,6 +77,11 @@ class MaebotLCMHandler
                 slam_->signal();
             }
             slam_->unlockSlamMutex();
+
+            pthread_mutex_lock(&state->loc.move_mutex);
+            state_->feedback = *msg;
+            state_->has_feedback = true;
+            pthread_mutex_unlock(&state->loc.move_mutex);
         }
 };
 
