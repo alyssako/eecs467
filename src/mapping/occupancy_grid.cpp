@@ -72,6 +72,7 @@ maebot_occupancy_grid_t OccupancyGrid::toLCM(void) const
 {
     maebot_occupancy_grid_t grid;
 
+    grid.utime           = 0;
     grid.origin_x        = globalOrigin_.x;
     grid.origin_y        = globalOrigin_.y;
     grid.meters_per_cell = metersPerCell_;

@@ -177,7 +177,6 @@ static void* update_map(void *data)
     }
     state->slam->unlockSlamMutex();
     state->slam->pushFirstScan();
-
     LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
     if(!updated_scan.valid)
     {
@@ -197,13 +196,17 @@ static void* update_map(void *data)
         }
         state->slam->unlockSlamMutex();
         maebot_laser_scan_t next_scan = state->slam->updateParticles();
+        //std::cout << "received scan" << std::endl;
         
         state->grid_mapper->addLaserScan(next_scan);
+        //std::cout << "added laser scan" << std::endl;
         
         LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
+        //std::cout << "updated scan" << std::endl;
         if(!updated_scan.valid) exit(1);
 
-        state->grid_mapper->updateGrid(updated_scan);
+        state->slam->bfs_result = state->grid_mapper->updateGrid(updated_scan);
+        //std::cout << "update grid" << std::endl;
         state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
     }
     return NULL;
@@ -230,8 +233,11 @@ int main(int argc, char **argv)
     //feenableexcept(FE_DIVBYZERO| FE_INVALID|FE_OVERFLOW); 
     feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
 
-    state->grid_mapper = new OccupancyGridMapper(state->lcm);
-    state->slam = new Slam(state->grid_mapper, state->lcm);
+    static OccupancyGridMapper ogm(state->lcm);
+    state->grid_mapper = &ogm;
+
+    static Slam s(&ogm, state->lcm);
+    state->slam = &s;
     // === End =============================================
 
     // Clean up on Ctrl+C
