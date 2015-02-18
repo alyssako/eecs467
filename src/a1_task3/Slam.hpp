@@ -28,6 +28,7 @@
 #include "OccupancyGridMapper.hpp"
 #include "Particles.hpp"
 #include "Path.h"
+#include "state.hpp"
 
 #include "math/point.hpp"
 #include "MagicNumbers.hpp"
@@ -37,6 +38,7 @@ class Slam
     private:
         Particles particles_;
         OccupancyGridMapper *grid_mapper_;
+        location *loc_;
         //Path path;
 
         std::vector<maebot_pose_t> poses_;
@@ -59,8 +61,9 @@ class Slam
         maebot_pose_t mB[2];
 
         void addPose(int left_ticks, int right_ticks, int64_t utime);
+
     public:
-        Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t);
+        Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t, location *loc_t);
         ~Slam();
         
         pthread_mutex_t path_mutex_;
