@@ -7,6 +7,7 @@
 #include <math.h>
 #include <vector>
 #include <lcm/lcm-cpp.hpp>
+#include <sstream>
 
 // core api
 #include "vx/vx.h"
@@ -86,6 +87,7 @@ lcm_handle_thread (void *data)
 
 float getDistance(maebot_pose_t &a, maebot_pose_t &b)
 {
+    std::cout<<a.x<<" "<<b.x<<" "<<a.y<<" "<<b.y<<" = "<<sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y))<<std::endl;
     return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
 }
 
@@ -97,7 +99,30 @@ float getDistance(maebot_pose_t &a, maebot_pose_t &b)
 animate_thread (void *data)
 {
     const int fps = 60;
+    float prevMax = 1;
     state_t *state = (state_t*)data;
+
+    std::vector<float> axis;
+    axis.push_back(0.0f);
+    axis.push_back(0.0f);
+    axis.push_back(0.0f);
+    axis.push_back(0.6f);
+    axis.push_back(0.0f);
+    axis.push_back(0.0f);
+    axis.push_back(0.0f);
+    axis.push_back(0.0f);
+    axis.push_back(0.0f);
+    axis.push_back(0.0f);
+    axis.push_back(0.2f);
+    axis.push_back(0.0f);
+        
+    vx_object_t *trans = vxo_mat_translate3(-0.3f,-0.1f,0.0f);
+
+    vx_buffer_t *buf = vx_world_get_buffer(state->vxworld, "axis");
+    vx_resc_t *axisV = vx_resc_copyf(&axis[0], 12);
+    vx_buffer_add_back(buf, vxo_chain(trans,
+                vxo_lines(axisV, 4, GL_LINES, vxo_lines_style(vx_blue, 1.5f))));
+    vx_buffer_swap(buf);
 
     // Continue running until we are signaled otherwise. This happens
     // when the window is closed/Ctrl+C is received.
@@ -109,36 +134,34 @@ animate_thread (void *data)
         unsigned int size = (state->poses.size() < state->truePoses.size()) ? 
                              state->poses.size() : state->truePoses.size();
 
+        float maxE = 0;
+        float err;
         for(unsigned int i = 0; i < size; i++)
         {
-            errors.push_back(i*0.001f);
-            errors.push_back(getDistance(state->poses[i], state->truePoses[i]));
+            err = getDistance(state->poses[i], state->truePoses[i]);
+            if(err > maxE) maxE = err;
+            
+            errors.push_back(i*0.6f/size);
+            errors.push_back(err*0.2f/prevMax);
             errors.push_back(0.0f);
         }
-       
-        std::vector<float> axis;
-        axis.push_back(0.0f);
-        axis.push_back(0.0f);
-        axis.push_back(0.0f);
-        axis.push_back(size*0.001f);
-        axis.push_back(0.0f);
-        axis.push_back(0.0f);
-        axis.push_back(0.0f);
-        axis.push_back(0.0f);
-        axis.push_back(0.0f);
-        axis.push_back(0.0f);
-        axis.push_back(0.01f);
-        axis.push_back(0.0f);
-        
+
+        prevMax = maxE;
+
         vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
         vx_resc_t *verts = vx_resc_copyf(&errors[0], size*3);
-        vx_buffer_add_back (buff, vxo_points(verts, size, vxo_points_style(vx_red, 2.0f)));
+        vx_buffer_add_back (buff, vxo_chain(trans,
+                    vxo_points(verts, size, vxo_points_style(vx_red, 2.0f))));
 
-        vx_resc_t *axisV = vx_resc_copyf(&axis[0], 12);
-        vx_buffer_add_back(buff, vxo_lines(axisV, 4, GL_LINES, vxo_lines_style(vx_blue, 1.0f)));
+        char str[20];
+        sprintf(str, "<<right,#00FF00,serif>>Maximum Error: %0.3f", maxE);
+        vx_buffer_add_back(buff, vxo_chain(vxo_mat_translate3(0, 0.2, 0),
+					       vxo_mat_scale3(0.002, 0.002, 0.002),
+					       vxo_text_create(VXO_TEXT_ANCHOR_CENTER, str)));
+
         vx_buffer_swap(buff);
 
-        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
+//        vx_buffer_swap (vx_world_get_buffer (state->vxworld, "axes"));
         pthread_mutex_unlock(&state->gui_mutex);
 
         usleep (1000000/fps);

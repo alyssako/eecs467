@@ -231,7 +231,7 @@ feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
     if(task2)
     {
         std::cout << "making grid" << std::endl;
-        std::ifstream input("figure_eight.txt");
+        std::ifstream input("../src/a1_task2/figure_eight.txt");
         assert(input.good());
         int width = 0, 
             height = 0;
