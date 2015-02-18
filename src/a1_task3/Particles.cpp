@@ -125,11 +125,11 @@ void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange la
 
     laser_scan_range.start_pose = toPose(index);
 
-    rotateParticle(gslu_rand_gaussian(r, alpha, 3.14/40), index);
-    moveParticle(gslu_rand_gaussian(r, delta_s, 0.5*delta_s), index);
-    //moveParticle(gslu_rand_gaussian(r, 0, delta_s), index);
-    //moveParticle(gslu_rand_gaussian(r, delta_s, 5), index);
-    rotateParticle(gslu_rand_gaussian(r, theta_alpha, 3.14/40), index);
+    //rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, alpha, sqrt(abs(eecs467::wrap_to_pi(alpha)*0.005)))), index);
+    rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, alpha, 3.141592/60)), index);
+    moveParticle(gslu_rand_gaussian(r, delta_s, sqrt(0.005*delta_s)), index);
+    rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, theta_alpha, 3.141592/60)), index);
+    //rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, theta_alpha, sqrt(abs(eecs467::wrap_to_pi(theta_alpha)*0.005)))), index);
     
     //rotateParticle(new_delta_alpha, index);
     //moveParticle(new_delta_s, index);
@@ -149,8 +149,8 @@ void Particles::rotateParticle(double theta, int index)
 
 void Particles::moveParticle(double s, int index)
 {
-    particles_[index].x += s * cos(particles_[index].theta) + gslu_rand_gaussian(r, 0, 0.05);
-    particles_[index].y += s * sin(particles_[index].theta) + gslu_rand_gaussian(r, 0, 0.05);
+    particles_[index].x += s * cos(particles_[index].theta) + gslu_rand_gaussian(r, 0, 0.0005);
+    particles_[index].y += s * sin(particles_[index].theta) + gslu_rand_gaussian(r, 0, 0.0005);
 
     assert(s == s);
     assert(particles_[index].x == particles_[index].x);
@@ -197,31 +197,28 @@ void Particles::calculateProbabilitySingle(eecs467::OccupancyGrid *grid, LaserSc
         auto a = -ls.scan.thetas[i] + ls.origins[i].theta;
         auto x = ls.origins[i].x + ls.scan.ranges[i] * cos(a);
         auto y = ls.origins[i].y + ls.scan.ranges[i] * sin(a);
-        //std::cout << "(x, y): (" << x << ", " << y << ")\n";
         int numBlacks = countBlacks(grid, ls.origins[i].x, ls.origins[i].y, x, y, 0.05);
-        if(numBlacks)
+        
+        particles_[index].probability -= numBlacks*6;
+        //eecs467::Point<double> point(x, y);
+        //eecs467::Point<int> cellPoint = global_position_to_grid_cell(point, *grid);
+        //auto v = grid->logOdds(cellPoint.x, cellPoint.y);
+        //particles_[index].probability += v*0.1;
+        eecs467::Point<double> point(x, y);
+        eecs467::Point<int> cellPoint = global_position_to_grid_cell(point, *grid);
+        auto v = grid->logOdds(cellPoint.x, cellPoint.y);
+        if(v < 0)
         {
-            particles_[index].probability -= numBlacks*3;
-        }
-        else
-        {
-            eecs467::Point<double> point(x, y);
-            eecs467::Point<int> cellPoint = global_position_to_grid_cell(point, *grid);
-            auto v = grid->logOdds(cellPoint.x, cellPoint.y);
-            particles_[index].probability += v*0.1;
-        }
-        /*if(v < 0)
-        {
-            particles_[index].probability -= 6;
+            particles_[index].probability -= 8;
         }
         else if(v > 0)
         {
-            particles_[index].probability -= 2 * (1 - v / 127.);
+            particles_[index].probability -= 2;
         }
         else
         {
-            particles_[index].probability -= 0;
-        }*/
+            particles_[index].probability -= 10;
+        }
     }
 }
 

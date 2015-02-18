@@ -8,7 +8,7 @@ CXXFLAGS = $(CXXFLAGS_STD) \
 	$(CFLAGS_COMMON) \
 	$(CFLAGS_LCMTYPES) \
 	$(CFLAGS_GSL) \
-    -g
+    -O2
 
 CFLAGS = $(CFLAGS_STD) \
 	$(CFLAGS_VX_GTK) \
@@ -17,7 +17,7 @@ CFLAGS = $(CFLAGS_STD) \
 	$(CFLAGS_COMMON) \
 	$(CFLAGS_LCMTYPES) \
 	$(CFLAGS_GSL) \
-    -g
+    -O2
 
 LDFLAGS = $(LDFLAGS_STD) \
 	  $(LDFLAGS_VX_GL) \
@@ -45,7 +45,7 @@ BIN_LCM_SENDER = $(BIN_PATH)/lcm_sender
 BIN_LCM_RECEIVER = $(BIN_PATH)/lcm_receiver
 
 ALL = $(LIB_EECS467) $(BIN_MAPPING_GUI) $(BIN_EECS467_APPROX_LASER) \
-      $(BIN_EECS467_MAEBOT_MAPPING) \
+      $(BIN_EECS467_MAEBOT_MAPPING) $(BIN_EECS467_PATH) \
       $(BIN_EECS467_MOVING_LASER)
 
 
@@ -57,33 +57,37 @@ $(LIB_EECS467): $(LIBEECS467_OBJS) $(LIBDEPS)
 	@echo "\t$@"
 	@ar rc $@ $(LIBEECS467_OBJS)
 
-$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o Particles.o Slam.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o Particles.o Slam.o Path.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) -pg
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_MAPPING_GUI): mapping_gui.o $(LIB_EECS467) $(LIBDEPS) $(LIB_VXGTK) $(LIB_VXGL) $(LIB_VX)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467) -pg
+	@$(CXX) -o $@ $^ $(LDFLAGS) $(LIB_EECS467)
 
 $(BIN_EECS467_PARTICLES): Particles.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) -pg
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+$(BIN_EECS467_PATH): Path.o $(LIB_EECE467) $(LIBDEPS)
+	@echo "\t$@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_EECS467_MOVING_LASER): MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) -pg
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_EECS467_APPROX_LASER): ApproxLaser.o MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) -pg
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
-$(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o ApproxLaser.o MovingLaser.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_OCCUPANCY_GRID_MAPPER): OccupancyGridMapper.o ApproxLaser.o MovingLaser.o Path.o$(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) -pg
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_EECS467_SLAM): Slam.o Particles.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
-	@$(CXX) -o $@ $^ $(LDFLAGS) -pg
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(BIN_LCM_SENDER): lcm_sender.o $(LIBDEPS)
 	@echo "\t$@"
