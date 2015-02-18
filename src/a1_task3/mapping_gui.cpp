@@ -127,10 +127,10 @@ animate_thread (void *data)
         {
             points.push_back((float)(state->poses[i].x/state->grid.metersPerCell()));
             points.push_back((float)(state->poses[i].y/state->grid.metersPerCell()));
-            points.push_back(0.00001);
+            points.push_back(0.0001);
         }
 
-        std::vector<float> lidar_points;
+        /*std::vector<float> lidar_points;
         if(state->endpoints.size())
         {
             int64_t point_utime = state->endpoints[state->endpoints.size() - 1].utime;
@@ -138,10 +138,10 @@ animate_thread (void *data)
             {
                 lidar_points.push_back((float)state->endpoints[i].x/state->grid.metersPerCell());
                 lidar_points.push_back((float)state->endpoints[i].y/state->grid.metersPerCell());
-                lidar_points.push_back(0.00001);
+                lidar_points.push_back(0.0001);
             }
             //std::cout << "Lidar points size: " << lidar_points.size() << std::endl;
-        }
+        }*/
         
         /*std::vector<float> truePoints;
         for(unsigned int i = 0; i < state->truePoses.size(); i++)
@@ -158,24 +158,72 @@ animate_thread (void *data)
             particlePoints.push_back((float)(state->particles[i].y/state->grid.metersPerCell()));
             particlePoints.push_back(0);
         }*/
+
+        std::vector<float> pathPoints;
+        for(int i = 0; i < state->pathPoints.size(); i++)
+        {
+            pathPoints.push_back((float)(state->pathPoints[i].x/state->grid.metersPerCell()));
+            pathPoints.push_back((float)(state->pathPoints[i].y/state->grid.metersPerCell()));
+            pathPoints.push_back(0.0001f);
+        }
+        
+        vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
+        /*std::vector<float> odometry_point;
+        std::vector<float> odometry_theta;
+        if(!state->particles.empty())
+        {
+            odometry_point.push_back(state->particles[state->particles.size() - 1].x/state->grid.metersPerCell());
+            odometry_point.push_back(state->particles[state->particles.size() - 1].y/state->grid.metersPerCell());
+            odometry_point.push_back(0.00001);
+        
+            vx_resc_t *odometryVerts = vx_resc_copyf(&odometry_point[0], odometry_point.size());
+            vx_buffer_add_back (buff,
+                                vxo_chain (mat_scale,
+                                           vxo_points(odometryVerts, 1, vxo_points_style(vx_green, 10.0f))));
+
+            odometry_theta.push_back(odometry_point[0]);
+            odometry_theta.push_back(odometry_point[1]);
+            odometry_theta.push_back(odometry_point[2]);
+            int d = 4;
+            odometry_theta.push_back(odometry_point[0] + d * cos(state->particles[state->particles.size() - 1].theta));
+            odometry_theta.push_back(odometry_point[1] + d * sin(state->particles[state->particles.size() - 1].theta));
+            odometry_theta.push_back(odometry_point[2]);
+
+            vx_resc_t *odometryThetaVerts = vx_resc_copyf(&odometry_theta[0], odometry_theta.size());
+            vx_buffer_add_back(buff,
+                               vxo_chain (mat_scale,
+                                          vxo_lines(odometryThetaVerts, 2, GL_LINES, vxo_lines_style(vx_blue, 2.0f))));
+        }*/
+
+
+        
+        vx_resc_t *pathVerts = vx_resc_copyf(&pathPoints[0], pathPoints.size());
         vx_resc_t *verts = vx_resc_copyf(&points[0], points.size());
-        vx_resc_t *lidarVerts = vx_resc_copyf(&lidar_points[0], lidar_points.size());
+        //vx_resc_t *lidarVerts = vx_resc_copyf(&lidar_points[0], lidar_points.size());
         //vx_resc_t *particleVerts = vx_resc_copyf(&particlePoints[0], particlePoints.size());
 
-        vx_buffer_t *buff = vx_world_get_buffer(state->vxworld, "points");
         /*vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
                                        vxo_points(verts, state->poses.size(), vxo_points_style(vx_green, 4.0f)),
                                        vxo_points(trueVerts, state->truePoses.size(), vxo_points_style(vx_blue, 4.0f)),
                                        vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_red, 2.0f))));*/
         
-        vx_buffer_add_back (buff,
+
+        /*vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
-                                       vxo_points(lidarVerts, lidar_points.size()/3, vxo_points_style(vx_blue, 4.0f))));
+                                       vxo_points(lidarVerts, lidar_points.size()/3, vxo_points_style(vx_blue, 4.0f))));*/
+
+        vx_buffer_add_back(buff,
+                            vxo_chain(mat_scale,
+                                        vxo_points(pathVerts, pathPoints.size() / 3, vxo_points_style(vx_purple, 2.0f))));
         
         vx_buffer_add_back (buff,
                             vxo_chain (mat_scale,
                                        vxo_points(verts, state->poses.size(), vxo_points_style(vx_red, 2.0f))));
+        
+        /*vx_buffer_add_back (buff,
+                            vxo_chain (mat_scale,
+                                       vxo_points(particleVerts, state->particles.size(), vxo_points_style(vx_green, 2.0f))));*/
         
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "bitmap"));
         vx_buffer_swap (vx_world_get_buffer (state->vxworld, "points"));
@@ -258,6 +306,12 @@ main (int argc, char *argv[])
 
     state->lcm->subscribe("MAEBOT_POSE_BEST", 
             &LocationHandler::handlePose,
+            &location_handler);
+    state->lcm->subscribe("MAEBOT_PARTICLE_GUI", 
+            &LocationHandler::handleParticles,
+            &location_handler);
+    state->lcm->subscribe("MAEBOT_PATH_GUI", 
+            &LocationHandler::handlePath,
             &location_handler);
     state->lcm->subscribe("OCCUPANCY_GRID_GUI", 
             &OccupancyGridGuiHandler::handleMessage,

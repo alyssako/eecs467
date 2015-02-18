@@ -1,15 +1,14 @@
 #include "Slam.hpp"
 #include <cassert>
 
-Slam::Slam(OccupancyGridMapper *gm) :
+Slam::Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t) :
     grid_mapper_(gm),
     scan_received_(false),
+    lcm(lcm_t),
     prev_time(0)
 {
-    pthread_mutex_init(&poses_mutex_, NULL);
     pthread_mutex_init(&slam_mutex_, NULL);
     pthread_cond_init(&cv_, NULL);
-    pthread_mutex_init(&scans_mutex_, NULL);
 
     left_prev_ticks = -1;
     right_prev_ticks = -1;
@@ -22,11 +21,6 @@ Slam::Slam(OccupancyGridMapper *gm) :
 
 Slam::~Slam()
 {
-}
-
-void Slam::setLCM(lcm::LCM *lcm_t)
-{
-    lcm = lcm_t;
 }
 
 bool Slam::posesEmpty()
@@ -43,18 +37,15 @@ void Slam::addMotorFeedback(maebot_motor_feedback_t input_feedback)
         assert(!poses_.empty());
         return;
     }
-    pthread_mutex_lock(&poses_mutex_);
     addPose(input_feedback.encoder_left_ticks, input_feedback.encoder_right_ticks, input_feedback.utime);
-    pthread_mutex_unlock(&poses_mutex_);
 }
 
 void Slam::addScan(maebot_laser_scan_t laser_scan)
 {
-    pthread_mutex_lock(&scans_mutex_);
     scans_.push(laser_scan);
     prev_time = laser_scan.utime;
     scan_received_ = true;
-    pthread_mutex_unlock(&scans_mutex_);
+    
 }
 
 /* absolute pose, not delta pose */
@@ -97,27 +88,32 @@ void Slam::addPose(int left_ticks, int right_ticks, int64_t utime)
     poses_.push_back(nextPose);
 }
 
-void Slam::updateParticles()
+void Slam::pushFirstScan()
 {
-    pthread_mutex_lock(&scans_mutex_);
+    maebot_laser_scan_t first = scans_.front();
+    grid_mapper_->addLaserScan(first);
+
+    maebot_pose_t mostProbable = particles_.mostProbable();
+    grid_mapper_->addPose(mostProbable);
+}
+
+maebot_laser_scan_t Slam::updateParticles()
+{
     assert(scan_received_);
     maebot_laser_scan_t nextScan = scans_.front();
     scans_.pop();
     if(scans_.empty()) { scan_received_ = false; }
-    pthread_mutex_unlock(&scans_mutex_);
 
     // if only 1 pose, can't call findLeftRightPoses
     if(poses_.size() < 2)
     {
-        return;
+        return nextScan;
     }
-    pthread_mutex_lock(&poses_mutex_);
     assert(prev_pose.utime <= nextScan.utime);
     LaserScanRange lsr = particles_.getLaserScan(prev_pose, nextScan, poses_, mB);
-    pthread_mutex_unlock(&poses_mutex_);
     if(!lsr.valid)
     {
-        return;
+        return nextScan;
     }
 
     // if the maebot hasn't moved, update the particle times and publish, but don't actually move particles
@@ -126,7 +122,7 @@ void Slam::updateParticles()
         particles_.updateTimes(lsr.end_pose.utime);
         prev_pose.utime = lsr.end_pose.utime;
         publish();
-        return;
+        return nextScan;
     }
 
     //std::cout << "update Particles\n";
@@ -146,30 +142,39 @@ void Slam::updateParticles()
     prev_pose = lsr.end_pose;
     publish();
     particles_.resample();
+
+    return nextScan;
 }
 
 void Slam::publish()
 {
-    /*for(int i = 0; i < NUM_PARTICLES; i++)
+    for(int i = 0; i < NUM_PARTICLES; i++)
     {
         maebot_pose_t pose = particles_.toPose(i);
         lcm->publish("MAEBOT_PARTICLE_GUI", &pose);
+    }
+
+    /*for(int i = 0; i < path.size(); i++)
+    {
+        maebot_pose_t pose;
+        pose.x = path.getCenterMetersX(path.x[i], grid_mapper_->metersPerCellMapper());
+        pose.y = path.getCenterMetersY(path.y[i], grid_mapper_->metersPerCellMapper());
+        lcm->publish("MAEBOT_PATH_GUI", &pose);
     }*/
+    //lcm->publish("MAEBOT_PARTICLE_GUI", &poses_.back());
     
     // publish particle to gui
     maebot_pose_t mostProbable = particles_.mostProbable();
     //lcm->publish("MAEBOT_POSE_GUI", &mostProbable);
 
-    grid_mapper_->lockPosesMutex();
     grid_mapper_->lockMapperMutex();
     grid_mapper_->addPose(mostProbable);
     if(!grid_mapper_->laserScansEmpty())
     {
         grid_mapper_->signal();
     }
-    grid_mapper_->unlockPosesMutex();
     grid_mapper_->unlockMapperMutex();
-    lcm->publish("MAEBOT_POSE_BEST", &mostProbable);
+    //lcm->publish("MAEBOT_POSE_BEST", &mostProbable);
     //std::cout << "sent particles\n";
 }
 

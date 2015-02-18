@@ -58,16 +58,7 @@ class MaebotLCMHandler
                              const maebot_laser_scan_t *msg)
         {
             assert(channel == "MAEBOT_LASER_SCAN");
-            grid_mapper_->lockLaserScansMutex();
-            grid_mapper_->lockMapperMutex();
-
-            grid_mapper_->addLaserScan(*msg);
-            if(!grid_mapper_->posesEmpty())
-                grid_mapper_->signal();
-
             slam_->addScan(*msg);
-            grid_mapper_->unlockLaserScansMutex();
-            grid_mapper_->unlockMapperMutex();
         }
 
         void handleMotorFeedback(const lcm::ReceiveBuffer *rbuf,

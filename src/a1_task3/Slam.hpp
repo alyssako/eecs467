@@ -27,6 +27,7 @@
 #include "ApproxLaser.hpp"
 #include "OccupancyGridMapper.hpp"
 #include "Particles.hpp"
+#include "Path.h"
 
 #include "math/point.hpp"
 #include "MagicNumbers.hpp"
@@ -36,12 +37,11 @@ class Slam
     private:
         Particles particles_;
         OccupancyGridMapper *grid_mapper_;
+        //Path path;
 
         std::vector<maebot_pose_t> poses_;
-        pthread_mutex_t poses_mutex_;
 
         std::queue<maebot_laser_scan_t> scans_;
-        pthread_mutex_t scans_mutex_;
 
         pthread_mutex_t slam_mutex_;
         pthread_cond_t cv_;
@@ -58,12 +58,12 @@ class Slam
 
         void addPose(int left_ticks, int right_ticks, int64_t utime);
     public:
-        Slam(OccupancyGridMapper *gm);
+        Slam(OccupancyGridMapper *gm, lcm::LCM *lcm_t);
         ~Slam();
-        void setLCM(lcm::LCM *lcm_t);
 
         void addMotorFeedback(maebot_motor_feedback_t input_feedback);
-        void updateParticles();
+        maebot_laser_scan_t updateParticles();
+        void pushFirstScan();
         void addScan(maebot_laser_scan_t scan);
         void publish();
         

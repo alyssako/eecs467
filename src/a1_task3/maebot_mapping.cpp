@@ -62,7 +62,6 @@ struct state
     pthread_mutex_t layer_mutex;
 
     pthread_t update_map_thread;
-    pthread_t update_particles_thread;
 
     getopt_t *gopt;
     char *url;
@@ -171,48 +170,41 @@ static void* update_map(void *data)
 {
     state_t *state = (state_t*) data;
 
-    while(state->running)
+    state->slam->lockSlamMutex();
+    while(!state->slam->scanReceived())
     {
-        state->grid_mapper->lockMapperMutex();
-
-        while(state->grid_mapper->laserScansEmpty() || state->grid_mapper->posesEmpty())        
-            state->grid_mapper->wait();
-        state->grid_mapper->unlockMapperMutex();
-
-        LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
-        if(!updated_scan.valid) continue;
-        //std::cout << "valid scan" << std::endl;
-
-        state->grid_mapper->updateGrid(updated_scan);
-        state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
-        //std::cout << "publish occupancy grid" << std::endl;
+        state->slam->wait();
     }
-    return NULL;
-}
+    state->slam->unlockSlamMutex();
+    state->slam->pushFirstScan();
 
-static void* update_particles(void *data)
-{
-    /*time_t start_time;
-    time(&start_time);*/
-    state_t *state = (state_t*) data;
+    LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
+    if(!updated_scan.valid)
+    {
+        std::cout << "initial scan not working" << std::endl;
+        exit(1);
+    }
+
+    state->grid_mapper->updateGrid(updated_scan);
+    state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
 
     while(state->running)
     {
-        /*time_t cur_time;
-        time(&cur_time);
-        double seconds = difftime(cur_time, start_time);
-        if(seconds > (110 * 4))
-        {
-            std::cout << "seconds: " << seconds << std::endl;
-            exit(0);
-        }*/
         state->slam->lockSlamMutex();
         while(!state->slam->scanReceived())
         {
             state->slam->wait();
         }
         state->slam->unlockSlamMutex();
-        state->slam->updateParticles();
+        maebot_laser_scan_t next_scan = state->slam->updateParticles();
+        
+        state->grid_mapper->addLaserScan(next_scan);
+        
+        LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
+        if(!updated_scan.valid) exit(1);
+
+        state->grid_mapper->updateGrid(updated_scan);
+        state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
     }
     return NULL;
 }
@@ -238,10 +230,8 @@ int main(int argc, char **argv)
     //feenableexcept(FE_DIVBYZERO| FE_INVALID|FE_OVERFLOW); 
     feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT & ~FE_UNDERFLOW);
 
-    state->grid_mapper = new OccupancyGridMapper;
-    state->slam = new Slam(state->grid_mapper);
-    state->grid_mapper->setLCM(state->lcm);
-    state->slam->setLCM(state->lcm);
+    state->grid_mapper = new OccupancyGridMapper(state->lcm);
+    state->slam = new Slam(state->grid_mapper, state->lcm);
     // === End =============================================
 
     // Clean up on Ctrl+C
@@ -282,13 +272,11 @@ int main(int argc, char **argv)
     // Spin up threads
     pthread_create(&state->cmd_thread, NULL, send_cmds, (void*)state);
     pthread_create(&state->update_map_thread, NULL, update_map, state);
-    pthread_create(&state->update_particles_thread, NULL, update_particles, state);
 
     // Loop forever
     while(state->lcm->handle() == 0);
 
     pthread_join (state->update_map_thread, NULL);
-    pthread_join (state->update_particles_thread, NULL);
     pthread_join (state->cmd_thread, NULL);
 
     return 0;

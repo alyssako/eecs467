@@ -2,31 +2,25 @@
 #include <iostream>
 #include <cassert>
 
-OccupancyGridMapper::OccupancyGridMapper() :
-	occupancy_grid_(10, 10, 0.05)
+OccupancyGridMapper::OccupancyGridMapper(lcm::LCM *lcm_t) :
+	occupancy_grid_(10, 10, 0.05),
+	occupancy_grid_expanded_(10, 10, 0.05),
+    lcm(lcm_t)
 {
-    pthread_mutex_init(&poses_mutex_, NULL);
-    pthread_mutex_init(&laser_scans_mutex_, NULL);
     pthread_mutex_init(&mapper_mutex_, NULL);
     pthread_cond_init(&cv_, NULL);
     end_points_.reserve(300);
 }
 
-OccupancyGridMapper::OccupancyGridMapper(int height, int width, double cellSize) :
+/*OccupancyGridMapper::OccupancyGridMapper(int height, int width, double cellSize) :
     occupancy_grid_(width, height, cellSize)
 {
-    pthread_mutex_init(&poses_mutex_, NULL);
-    pthread_mutex_init(&laser_scans_mutex_, NULL);
     pthread_mutex_init(&mapper_mutex_, NULL);
     pthread_cond_init(&cv_, NULL);
-}
+}*/
 
 OccupancyGridMapper::~OccupancyGridMapper()
 {
-}
-
-void OccupancyGridMapper::setLCM(lcm::LCM *lcm_t){
-    lcm = lcm_t;
 }
 
 void OccupancyGridMapper::setLogOddsMapper(int x, int y, double logOdds)
@@ -34,39 +28,77 @@ void OccupancyGridMapper::setLogOddsMapper(int x, int y, double logOdds)
     occupancy_grid_(x, y) = logOdds;
 }
 
+void OccupancyGridMapper::expandOccupancyGrid()
+{
+    int w = occupancy_grid_.widthInCells();
+    int h = occupancy_grid_.heightInCells();
+    std::unordered_set<int> s;
+    for(int y = 0; y < h; y++)
+    {
+        for(int x = 0; x < w; x++)
+        {
+            auto v = occupancy_grid_(x, y);
+            occupancy_grid_expanded_(x, y) = v;
+            if(v > 0)
+            {
+                for(int y0 = y - EXPAND_THICKNESS; y0 <= y+EXPAND_THICKNESS; y0++)
+                {
+                    for(int x0 = x - EXPAND_THICKNESS; x0 <= x + EXPAND_THICKNESS; x0++)
+                    {
+                        s.insert(y0*w + x0);
+                    }
+                }
+            }
+        }
+    }
+
+    for(const int &i: s)
+    {
+        occupancy_grid_expanded_.setLogOdds(i%w, i/w, 127);
+    }
+}
+
 LaserScan OccupancyGridMapper::calculateLaserOrigins()
 {
-    pthread_mutex_lock(&laser_scans_mutex_);
-    pthread_mutex_lock(&poses_mutex_);
-
     maebot_pose_t pose = poses_.front();
     poses_.pop();
     maebot_laser_scan_t laser_scan = laser_scans_.front();
     laser_scans_.pop();
 
-    pthread_mutex_unlock(&laser_scans_mutex_);
-    pthread_mutex_unlock(&poses_mutex_);
-
-    if(!approx_laser_.containsPoses())
+    if(poses_.empty())
     {
         approx_laser_.addPose(&pose);
-        LaserScan ls;
-        ls.valid = false;
+        LaserScanRange lsr(true, pose, pose, laser_scan);
+
+        LaserScan ls = moving_laser_.findOrigin(lsr);
+
         return ls;
     }
-
-    approx_laser_.addPose(&pose);
-    LaserScanRange lsr = approx_laser_.findPts(&laser_scan);
-    if(lsr.valid == false)
+    else
     {
-        LaserScan ls;
-        ls.valid = false;
+        assert(laser_scan.utime == pose.utime);
+
+        if(!approx_laser_.containsPoses())
+        {
+            approx_laser_.addPose(&pose);
+            LaserScan ls;
+            ls.valid = false;
+            return ls;
+        }
+
+        approx_laser_.addPose(&pose);
+        LaserScanRange lsr = approx_laser_.findPts(&laser_scan);
+        if(lsr.valid == false)
+        {
+            LaserScan ls;
+            ls.valid = false;
+            return ls;
+        }
+
+        LaserScan ls = moving_laser_.findOrigin(lsr);
+
         return ls;
     }
-
-    LaserScan ls = moving_laser_.findOrigin(lsr);
-
-    return ls;
 }
 
 void OccupancyGridMapper::updateGrid(LaserScan scan)
@@ -84,6 +116,7 @@ void OccupancyGridMapper::updateGrid(LaserScan scan)
         end_points_[i] = ep;
         drawLineMeters(scan.origins[i].x, scan.origins[i].y, e_x, e_y, -2, 1);
     }
+    expandOccupancyGrid();
 }
 
 /*
@@ -138,16 +171,17 @@ void OccupancyGridMapper::drawLineMeters(double s_x, double s_y, double e_x, dou
 
 void OccupancyGridMapper::publishOccupancyGrid(maebot_pose_t pose)
 {
+    //maebot_occupancy_grid_t data = occupancy_grid_expanded_.toLCM();
     maebot_occupancy_grid_t data = occupancy_grid_.toLCM();
     lcm->publish("OCCUPANCY_GRID_GUI", &data);
-    /*int64_t time = end_points_[0].utime;
+    int64_t time = end_points_[0].utime;
     int i = 0;
     while(end_points_[i].utime == time)
     {
         lcm->publish("MAEBOT_LASER_ENDPOINTS", &end_points_[i]);
         i++;
-    }*/
-    //lcm->publish("MAEBOT_POSE_GUI", &pose);
+    }
+    lcm->publish("MAEBOT_POSE_BEST", &pose);
     //std::cout << "sent grid\n";
 }
 
@@ -172,26 +206,6 @@ bool OccupancyGridMapper::laserScansEmpty()
 bool OccupancyGridMapper::posesEmpty()
 {
     return poses_.empty();
-}
-
-void OccupancyGridMapper::lockLaserScansMutex()
-{
-    pthread_mutex_lock(&laser_scans_mutex_);
-}
-
-void OccupancyGridMapper::unlockLaserScansMutex()
-{
-    pthread_mutex_unlock(&laser_scans_mutex_);
-}
-
-void OccupancyGridMapper::lockPosesMutex()
-{
-    pthread_mutex_lock(&poses_mutex_);
-}
-
-void OccupancyGridMapper::unlockPosesMutex()
-{
-    pthread_mutex_unlock(&poses_mutex_);
 }
 
 void OccupancyGridMapper::lockMapperMutex()
@@ -222,4 +236,9 @@ void OccupancyGridMapper::addLaserScan(maebot_laser_scan_t input_scan)
 void OccupancyGridMapper::addPose(maebot_pose_t input_pose)
 {
     poses_.push(input_pose);
+}
+
+double OccupancyGridMapper::metersPerCellMapper()
+{
+    return occupancy_grid_.metersPerCell();
 }

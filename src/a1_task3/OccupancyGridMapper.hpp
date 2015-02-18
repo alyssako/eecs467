@@ -11,6 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <queue>
+#include <unordered_set>
 #include <iostream>
 
 #include "lcmtypes/maebot_motor_command_t.hpp"
@@ -34,14 +35,13 @@ class OccupancyGridMapper
 {
     private:
         std::queue<maebot_laser_scan_t> laser_scans_;
-        pthread_mutex_t laser_scans_mutex_;
         
         std::queue<maebot_pose_t> poses_;
-        pthread_mutex_t poses_mutex_;
 
         pthread_cond_t cv_;
         pthread_mutex_t mapper_mutex_; // lock used with cv to wait until poses_/motor_feedbacks_ and laser_scans_ are both nonempty
         eecs467::OccupancyGrid occupancy_grid_;
+        eecs467::OccupancyGrid occupancy_grid_expanded_;
         lcm::LCM *lcm;
         
         ApproxLaser approx_laser_;
@@ -49,12 +49,12 @@ class OccupancyGridMapper
         std::vector<maebot_pose_t> end_points_;
 
     public:
-        OccupancyGridMapper();
-        OccupancyGridMapper(int height, int width, double cellSize);
+        OccupancyGridMapper(lcm::LCM *lcm_t);
+        //OccupancyGridMapper(int height, int width, double cellSize);
         ~OccupancyGridMapper();
 
-        void setLCM(lcm::LCM *lcm_t);
         void setLogOddsMapper(int x, int y, double logOdds);
+        void expandOccupancyGrid();
         
         LaserScan calculateLaserOrigins();
 
@@ -76,13 +76,11 @@ class OccupancyGridMapper
         // lock/unlock
         void lockMapperMutex();
         void unlockMapperMutex();
-        void lockPosesMutex();
-        void unlockPosesMutex();
-        void lockLaserScansMutex();
-        void unlockLaserScansMutex();
 
         void wait();
         void signal();
+
+        double metersPerCellMapper();
 };
 
 #endif

@@ -73,7 +73,7 @@ class LocationHandler
             pthread_mutex_lock(&state->gui_mutex);
             state->truePoses.push_back(*msg);
             pthread_mutex_unlock(&state->gui_mutex);
-        }
+        }*/
         
         void handleParticles(const lcm::ReceiveBuffer *rbuf,
                             const std::string& channel,
@@ -82,7 +82,16 @@ class LocationHandler
             pthread_mutex_lock(&state->gui_mutex);
             state->particles.push_back(*msg);
             pthread_mutex_unlock(&state->gui_mutex);
-        }*/
+        }
+        
+        void handlePath(const lcm::ReceiveBuffer *rbuf,
+                        const std::string& channel,
+                        const maebot_pose_t *msg)
+        {
+            pthread_mutex_lock(&state->gui_mutex);
+            state->pathPoints.push_back(*msg);
+            pthread_mutex_unlock(&state->gui_mutex);
+        }
 };
 
 class EndpointsHandler
