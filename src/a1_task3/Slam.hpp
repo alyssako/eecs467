@@ -28,10 +28,16 @@
 #include "OccupancyGridMapper.hpp"
 #include "Particles.hpp"
 #include "Path.h"
-#include "state.hpp"
 
 #include "math/point.hpp"
 #include "MagicNumbers.hpp"
+
+struct location {
+    double theta;
+    double x;
+    double y;
+    pthread_mutex_t move_mutex;
+};
 
 class Slam
 {

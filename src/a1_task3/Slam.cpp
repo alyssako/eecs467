@@ -205,11 +205,11 @@ void Slam::publish()
     grid_mapper_->lockMapperMutex();
     grid_mapper_->addPose(mostProbable);
    
-    pthread_mutex_lock(loc_->move_mutex);
+    pthread_mutex_lock(&loc_->move_mutex);
     loc_->x = mostProbable.x;
     loc_->y = mostProbable.y;
     loc_->theta = mostProbable.theta;
-    pthread_mutex_unlock(loc_->move_mutex);
+    pthread_mutex_unlock(&loc_->move_mutex);
 
     if(!grid_mapper_->laserScansEmpty())
     {

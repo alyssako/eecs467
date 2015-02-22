@@ -36,7 +36,6 @@
 #include "OccupancyGridGuiHandler.hpp"
 
 using namespace std;
-typedef gui_state state_t;
 
 // It's good form for every application to keep its state in a struct.
 // Moved to OccupancyGridHandler.hpp 
@@ -78,7 +77,7 @@ static int to_grayscale(int a)
     void *
 lcm_handle_thread (void *data)
 {
-    state_t *state = (state_t*)data;
+    gui_state *state = (gui_state*)data;
     while(1) state->lcm->handle();
     return NULL;
 }
@@ -91,7 +90,7 @@ lcm_handle_thread (void *data)
 animate_thread (void *data)
 {
     const int fps = 60;
-    state_t *state = (state_t*)data;
+    gui_state *state = (gui_state*)data;
 
     // Continue running until we are signaled otherwise. This happens
     // when the window is closed/Ctrl+C is received.
@@ -248,10 +247,10 @@ animate_thread (void *data)
 //    return NULL;
 //}
 
-    state_t *
+    gui_state *
 state_create (void)
 {
-    state_t *state = new state_t;
+    gui_state *state = new gui_state;
 
     state->vxworld = vx_world_create ();
     state->vxeh = new vx_event_handler_t;
@@ -272,7 +271,7 @@ state_create (void)
 }
 
     void
-state_destroy (state_t *state)
+state_destroy (gui_state *state)
 {
     if (!state)
         return;
@@ -296,7 +295,7 @@ state_destroy (state_t *state)
 main (int argc, char *argv[])
 {
     eecs467_init (argc, argv);
-    state_t *state = state_create ();
+    gui_state *state = state_create ();
 
     OccupancyGridGuiHandler grid_handler(&state->grid);
     LocationHandler location_handler(state);

@@ -35,14 +35,50 @@
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
 #include "lcmtypes/maebot_pose_t.hpp"
+#include "lcmtypes/maebot_motor_feedback_t.hpp"
 
 #include <vector>
+#include "OccupancyGridMapper.hpp"
+#include "Slam.hpp"
 
-struct location {
-    double theta;
-    double x;
-    double y;
-    pthread_mutex_t move_mutex;
+struct state_t
+{
+    int running;
+
+    double joy_bounds;
+    double last_click[3];
+
+    maebot_motor_command_t cmd;
+    pthread_mutex_t cmd_mutex;
+    pthread_t cmd_thread;
+
+    //pthread_t lcm_thread;
+    pthread_t render_thread;
+    pthread_mutex_t render_mutex;
+    pthread_mutex_t layer_mutex;
+
+    pthread_t update_map_thread;
+
+    getopt_t *gopt;
+    char *url;
+    image_source_t *isrc;
+    int fidx;
+
+    lcm::LCM *lcm;
+    pthread_mutex_t lcm_mutex;
+
+    OccupancyGridMapper *grid_mapper;
+    Slam *slam;
+    // bot info
+    bool need_init;
+    bool has_feedback;
+    double right_prev_dist;
+    double left_prev_dist;
+    double next_x;
+    double next_y;
+
+    location loc;
+    maebot_motor_feedback_t feedback; 
 };
 
 struct gui_state {
@@ -83,17 +119,6 @@ struct gui_state {
     std::vector<maebot_pose_t> pathPoints;
 
     int location_count;
- 
-    // bot info
-    bool need_init;
-    bool has_feedback;
-    double right_prev_dist;
-    double left_prev_dist;
-    double next_x;
-    double next_y;
-
-    location loc;
-    maebot_motor_feedback_t feedback; 
 };
 
 struct error_state {

@@ -34,9 +34,8 @@
 
 #include "mapping/occupancy_grid.hpp"
 #include "mapping/occupancy_grid_utils.hpp"
-#include "OccupancyGridMapper.hpp"
-#include "Slam.hpp"
 #include "MagicNumbers.hpp"
+#include "state.hpp"
 
 
 #define MAX_REVERSE_SPEED 0.125f
@@ -44,37 +43,6 @@
 
 #define dmax(A,B) A < B ? B : A
 #define dmin(A,B) A < B ? A : B
-
-typedef struct state state_t;
-struct state
-{
-    int running;
-
-    double joy_bounds;
-    double last_click[3];
-
-    maebot_motor_command_t cmd;
-    pthread_mutex_t cmd_mutex;
-    pthread_t cmd_thread;
-
-    //pthread_t lcm_thread;
-    pthread_t render_thread;
-    pthread_mutex_t render_mutex;
-    pthread_mutex_t layer_mutex;
-
-    pthread_t update_map_thread;
-
-    getopt_t *gopt;
-    char *url;
-    image_source_t *isrc;
-    int fidx;
-
-    lcm::LCM *lcm;
-    pthread_mutex_t lcm_mutex;
-
-    OccupancyGridMapper *grid_mapper;
-    Slam *slam;
-};
 
 static int verbose = 0;
 
@@ -98,7 +66,7 @@ static void moveForward(state_t *state)
     state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
 }
 
-static void moveTowardsPoint(maebot_pose_t a, int nextCell, state_t *state)
+/*static void moveTowardsPoint(maebot_pose_t a, int nextCell, state_t *state)
 {
     if(state->slam->bfs_result.size() <= 0)
         return;
@@ -122,11 +90,11 @@ static void moveTowardsPoint(maebot_pose_t a, int nextCell, state_t *state)
             std::cout << "REACHED WAYPOINT. bfs_result.size() = " << state->slam->bfs_result.size() << std::endl;
         }
     }
-}
+}*/
 
-bool reachGoal(state_t *state) {
+/*bool reachGoal(state_t *state) {
     return (abs(state->loc.x - state->next_x) < SAME_REGION_R && 
-            abs(state->loc.y - state->next.y) < SAME_REGION_R);
+            abs(state->loc.y - state->next_y) < SAME_REGION_R);
 }
 
 bool rightAngle(state_t *state, double &angle) {
@@ -138,18 +106,49 @@ bool rightAngle(state_t *state, double &angle) {
         angle = -3.14/2.0;
     
     return (abs(state->loc.theta - angle) < SAME_ANGLE_D);
-}
+}*/
 
 // This thread continuously publishes command messages to the maebot
 static void* send_cmds(void *data)
 {
     state_t *state = (state_t *) data;
     uint32_t Hz = 20;
+    srand(time(NULL));
+
+    double sleep = rand()/RAND_MAX;
+    int forward = rand() % 4 + 1;
+    int count = 0;
+    int64_t utime = utime_now();
 
     while (state->running) {
-        /*pthread_mutex_lock(&state->cmd_mutex);
+        pthread_mutex_lock(&state->cmd_mutex);
         pthread_mutex_lock(&state->slam->path_mutex_);
-        if(!state->slam->bfs_result.empty())
+        if(count%2)
+        {
+            rotateTowards(1, state);
+        }
+        else
+        {
+            moveForward(state);
+        }
+        int64_t nextTime = utime_now();
+        sleep -= (nextTime - utime)/1000000.0;
+        utime = nextTime;
+        if(sleep <= 0)
+        {
+            sleep = rand()/RAND_MAX;
+            count++;
+        }
+        if(forward <= 0)
+        {
+            forward = rand() % 6 + 3;
+            count++;
+        }
+
+        pthread_mutex_unlock(&state->slam->path_mutex_);
+        pthread_mutex_unlock(&state->cmd_mutex);
+        usleep(1000000/Hz);
+        /*if(!state->slam->bfs_result.empty())
         {
             int nextCell = state->slam->bfs_result.back();
             pthread_mutex_unlock(&state->slam->path_mutex_);
@@ -161,15 +160,13 @@ static void* send_cmds(void *data)
         }
         else
         {
-            pthread_mutex_unlock(&state->slam->path_mutex_);
-            pthread_mutex_unlock(&state->cmd_mutex);
         }*/
-        usleep(1000000/Hz);
+        /*usleep(1000000/Hz);
         
-        pthread_mutex_lock(state->loc.move_mutex);
+        pthread_mutex_lock(&state->loc.move_mutex);
         
         if (!state->has_feedback) {
-            pthread_mutex_unlock(state->loc.move_mutex);
+            pthread_mutex_unlock(&state->loc.move_mutex);
             continue;
         }
         
@@ -197,9 +194,11 @@ static void* send_cmds(void *data)
         state->loc.y += sin(state->loc.theta + alpha) * s_; 
         state->loc.theta = eecs467::wrap_to_2pi(state->loc.theta + delta_theta);
 
-        if(reachGoal(&state)){
-            if (no next) {   
-                pthread_mutex_unlock(state->loc.move_mutex);
+        maebot_motor_command_t cmd;
+        cmd.utime = utime_now();
+        if(reachGoal(state)){
+            if (state->slam->bfs_result.empty()) {   
+                pthread_mutex_unlock(&state->loc.move_mutex);
                 cmd.motor_right_speed = 0.0f;
                 cmd.motor_left_speed = 0.0f;
                 state->lcm->publish("MAEBOT_MOTOR_COMMAND", &cmd);
@@ -207,30 +206,27 @@ static void* send_cmds(void *data)
             }
 
             // get next goal location here
-            state->next_x = ...;
-            state->next_y = ...;     
+            state->next_x = state->grid_mapper->toX(state->slam->bfs_result.back());
+            state->next_y = state->grid_mapper->toY(state->slam->bfs_result.back());
+            state->slam->bfs_result.pop_back();
         }
-        pthread_mutex_unlock(state->loc.move_mutex);
+        pthread_mutex_unlock(&state->loc.move_mutex);
 
-        maebot_motor_command_t cmd;
-        cmd.utime = utime_now();
-        
         double angle;
-        if(!rightAngle(&state, angle)){
+        if(!rightAngle(state, angle)){
             if(eecs467::angle_diff(state->loc.theta, angle) > 0) {
-                cmd.motor_right_speed = FORWARD_V;
-                cmd.motor_left_speed = FORWARD_V * -1;
+                cmd.motor_right_speed = 0.8*FORWARD_V;
+                cmd.motor_left_speed = 0.8*FORWARD_V * -1;
             } else {
-                cmd.motor_right_speed = FORWARD_V * -1;
-                cmd.motor_left_speed = FORWARD_V; 
+                cmd.motor_right_speed = 0.8*FORWARD_V * -1;
+                cmd.motor_left_speed = 0.8*FORWARD_V; 
             }
         } else { 
             cmd.motor_right_speed = FORWARD_V;
             cmd.motor_left_speed = FORWARD_V;
         }
 
-        state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(state->cmd));
->>>>>>> 80d176fcb9f3f1bbe97128afae4f32a54e026bce
+        //state->lcm->publish("MAEBOT_MOTOR_COMMAND", &(cmd));*/
     }
 
     return NULL;
@@ -256,7 +252,7 @@ static void* update_map(void *data)
 
     state->grid_mapper->updateGrid(updated_scan);
     state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
-
+    std::cout << "here" << std::endl;
     while(state->running)
     {
         state->slam->lockSlamMutex();
@@ -266,13 +262,13 @@ static void* update_map(void *data)
         }
         state->slam->unlockSlamMutex();
         maebot_laser_scan_t next_scan = state->slam->updateParticles();
-        //std::cout << "received scan" << std::endl;
+        std::cout << "received scan" << std::endl;
         
         state->grid_mapper->addLaserScan(next_scan);
-        //std::cout << "added laser scan" << std::endl;
+        std::cout << "added laser scan" << std::endl;
         
         LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
-        //std::cout << "updated scan" << std::endl;
+        std::cout << "updated scan" << std::endl;
         if(!updated_scan.valid) exit(1);
 
         pthread_mutex_lock(&state->slam->path_mutex_);
@@ -280,7 +276,7 @@ static void* update_map(void *data)
         state->slam->bfs_result.clear();
         state->slam->bfs_result = retval;
         pthread_mutex_unlock(&state->slam->path_mutex_);
-        //std::cout << "update grid" << std::endl;
+        std::cout << "update grid" << std::endl;
         state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
     }
     return NULL;
@@ -339,7 +335,7 @@ int main(int argc, char **argv)
     verbose = getopt_get_bool(state->gopt, "verbose");
 
     // LCM subscriptions
-    MaebotLCMHandler lcm_handler(state->grid_mapper, state->slam, &state);
+    MaebotLCMHandler lcm_handler(state->grid_mapper, state->slam, state);
 
     state->lcm->subscribe("MAEBOT_LASER_SCAN",
             &MaebotLCMHandler::handleLaserScan,
