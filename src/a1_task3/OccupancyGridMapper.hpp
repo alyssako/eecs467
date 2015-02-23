@@ -92,6 +92,8 @@ class OccupancyGridMapper
         int toIndex(int x, int y);
         int toX(int index);
         int toY(int index);
+        void toXYinMeters(int index, double &xm, double &ym);
+
         //std::vector<int> backtrace(int x, int y);
         std::vector<int> backtrace(int endx, int endy, int startx, int starty);
         bool getUnknown(int _x, int _y);

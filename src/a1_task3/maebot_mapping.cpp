@@ -113,17 +113,17 @@ static void* send_cmds(void *data)
 {
     state_t *state = (state_t *) data;
     uint32_t Hz = 20;
-    srand(time(NULL));
+    //srand(time(NULL));
 
-    double sleep = rand()/RAND_MAX;
-    int forward = rand() % 4 + 1;
-    int count = 0;
-    int64_t utime = utime_now();
+    //double sleep = rand()/RAND_MAX;
+    //int forward = rand() % 4 + 1;
+    //int count = 0;
+    //int64_t utime = utime_now();
 
     while (state->running) {
         pthread_mutex_lock(&state->cmd_mutex);
         pthread_mutex_lock(&state->slam->path_mutex_);
-        if(count%2)
+/*        if(count%2)
         {
             rotateTowards(1, state);
         }
@@ -147,7 +147,7 @@ static void* send_cmds(void *data)
 
         pthread_mutex_unlock(&state->slam->path_mutex_);
         pthread_mutex_unlock(&state->cmd_mutex);
-        usleep(1000000/Hz);
+        usleep(1000000/Hz);*/
         /*if(!state->slam->bfs_result.empty())
         {
             int nextCell = state->slam->bfs_result.back();
@@ -161,7 +161,7 @@ static void* send_cmds(void *data)
         else
         {
         }*/
-        /*usleep(1000000/Hz);
+        /*iusleep(1000000/Hz);
         
         pthread_mutex_lock(&state->loc.move_mutex);
         
@@ -262,13 +262,13 @@ static void* update_map(void *data)
         }
         state->slam->unlockSlamMutex();
         maebot_laser_scan_t next_scan = state->slam->updateParticles();
-        std::cout << "received scan" << std::endl;
+        //std::cout << "received scan" << std::endl;
         
         state->grid_mapper->addLaserScan(next_scan);
-        std::cout << "added laser scan" << std::endl;
+        //std::cout << "added laser scan" << std::endl;
         
         LaserScan updated_scan = state->grid_mapper->calculateLaserOrigins();
-        std::cout << "updated scan" << std::endl;
+        //std::cout << "updated scan" << std::endl;
         if(!updated_scan.valid) exit(1);
 
         pthread_mutex_lock(&state->slam->path_mutex_);
@@ -276,7 +276,7 @@ static void* update_map(void *data)
         state->slam->bfs_result.clear();
         state->slam->bfs_result = retval;
         pthread_mutex_unlock(&state->slam->path_mutex_);
-        std::cout << "update grid" << std::endl;
+        //std::cout << "update grid" << std::endl;
         state->grid_mapper->publishOccupancyGrid(updated_scan.end_pose);
     }
     return NULL;
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
     std::cout << "listening" << std::endl;
 
     // Spin up threads
-    pthread_create(&state->cmd_thread, NULL, send_cmds, (void*)state);
+    //pthread_create(&state->cmd_thread, NULL, send_cmds, (void*)state);
     pthread_create(&state->update_map_thread, NULL, update_map, state);
 
     // Loop forever

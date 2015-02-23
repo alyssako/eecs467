@@ -57,7 +57,7 @@ $(LIB_EECS467): $(LIBEECS467_OBJS) $(LIBDEPS)
 	@echo "\t$@"
 	@ar rc $@ $(LIBEECS467_OBJS)
 
-$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o Particles.o Slam.o Path.o $(LIB_EECE467) $(LIBDEPS)
+$(BIN_EECS467_MAEBOT_MAPPING): maebot_mapping.o MovingLaser.o ApproxLaser.o OccupancyGridMapper.o Particles.o Slam.o $(LIB_EECE467) $(LIBDEPS)
 	@echo "\t$@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 

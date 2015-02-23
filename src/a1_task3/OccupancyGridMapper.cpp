@@ -149,17 +149,24 @@ std::vector<int> OccupancyGridMapper::search(int x, int y)
     return retval;
 }
 
-int OccupancyGridMapper::toIndex(int x, int y)
-{
+int OccupancyGridMapper::toIndex(int x, int y){
     return y*bfs_.widthInCells() + x;
 }
-int OccupancyGridMapper::toX(int index)
-{
+
+int OccupancyGridMapper::toX(int index){
     return index % bfs_.widthInCells();
 }
-int OccupancyGridMapper::toY(int index)
-{
+
+int OccupancyGridMapper::toY(int index){
     return index / bfs_.widthInCells();
+}
+
+void OccupancyGridMapper::toXYinMeters(int index, double &xm, double &ym)
+{
+    eecs467::Point<double> pt(index % bfs_.widthInCells(), index / bfs_.widthInCells());
+    pt = eecs467::grid_position_to_global_position(pt, occupancy_grid_);
+    xm = pt.x;
+    ym = pt.y;
 }
 
 std::vector<int> OccupancyGridMapper::backtrace(int endx, int endy, int startx, int starty)

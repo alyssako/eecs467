@@ -126,9 +126,9 @@ void Particles::moveRandomSingle(eecs467::OccupancyGrid *grid, LaserScanRange la
     laser_scan_range.start_pose = toPose(index);
 
     //rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, alpha, sqrt(abs(eecs467::wrap_to_pi(alpha)*0.005)))), index);
-    rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, alpha, 3.141592/60)), index);
+    rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, alpha, (3.141592/60+alpha/2))), index);
     moveParticle(gslu_rand_gaussian(r, delta_s, sqrt(0.005*delta_s)), index);
-    rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, theta_alpha, 3.141592/60)), index);
+    rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, theta_alpha, (3.141592/60+theta_alpha/2))), index);
     //rotateParticle(eecs467::wrap_to_pi(gslu_rand_gaussian(r, theta_alpha, sqrt(abs(eecs467::wrap_to_pi(theta_alpha)*0.005)))), index);
     
     //rotateParticle(new_delta_alpha, index);

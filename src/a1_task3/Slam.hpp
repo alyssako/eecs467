@@ -27,7 +27,7 @@
 #include "ApproxLaser.hpp"
 #include "OccupancyGridMapper.hpp"
 #include "Particles.hpp"
-#include "Path.h"
+//#include "Path.h"
 
 #include "math/point.hpp"
 #include "MagicNumbers.hpp"
@@ -73,7 +73,7 @@ class Slam
         ~Slam();
         
         pthread_mutex_t path_mutex_;
-        vector<int> bfs_result;
+        std::vector<int> bfs_result;
         maebot_pose_t mostProbableParticle();
 
         void addMotorFeedback(maebot_motor_feedback_t input_feedback);
